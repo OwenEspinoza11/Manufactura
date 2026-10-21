@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Kardex{% endblock %}
+{% block migas %}Inventario · movimientos inmutables (no se editan ni se borran){% endblock %}
+{% block encabezado %}Kardex de movimientos{% endblock %}
+{% block acciones %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'kpi_exportar' 'movimientos' %}"><i class="bi bi-download"></i> CSV</a>{% endblock %}
+{% block contenido %}
+<div class="card mb-3"><div class="card-body">
+  <form class="row g-2" method="get">
+    <div class="col-md-5"><select name="producto" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Todos los productos</option>
+      {% for p in productos %}<option value="{{ p.pk }}" {% if producto and p.pk == producto.pk %}selected{% endif %}>{{ p }}</option>{% endfor %}
+    </select></div>
+    <div class="col-md-4"><select name="tipo" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Todos los tipos</option>
+      {% for c, n in tipos %}<option value="{{ c }}" {% if tipo == c %}selected{% endif %}>{{ n }}</option>{% endfor %}
+    </select></div>
+  </form>
+</div></div>
+<div class="card"><div class="table-responsive"><table class="table table-sm mb-0">
+  <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Lote</th><th>Origen → destino</th><th class="num">Cantidad</th><th class="num">Costo/u</th><th>Documento</th><th>Usuario</th></tr></thead>
+  {% for m in pagina %}
+    <tr><td class="small">{{ m.fecha|date:"d/m/Y H:i" }}</td><td class="small">{{ m.get_tipo_display }}</td><td class="small">{{ m.producto.codigo }}</td>
+    <td class="small">{% if m.lote %}<a href="{% url 'lote_detalle' m.lote.pk %}">{{ m.lote }}</a>{% endif %}</td>
+    <td class="small">{{ m.almacen_origen.codigo|default:"·" }} → {{ m.almacen_destino.codigo|default:"·" }}</td>
+    <td class="num {% if m.almacen_destino and not m.almacen_origen %}text-success{% elif m.almacen_origen and not m.almacen_destino %}text-danger{% endif %}">{{ m.cantidad|num:3 }}</td>
+    <td class="num">{{ m.costo_unitario|moneda }}</td><td class="small">{{ m.referencia }}</td><td class="small">{{ m.usuario|default:"" }}</td></tr>
+  {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">Sin movimientos.</td></tr>{% endfor %}
+</table></div>
+{% if pagina.has_other_pages %}
+<div class="card-body d-flex gap-2 align-items-center small">
+  {% if pagina.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?page={{ pagina.previous_page_number }}&producto={{ producto.pk|default:'' }}&tipo={{ tipo|default:'' }}">«</a>{% endif %}
+  Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}
+  {% if pagina.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?page={{ pagina.next_page_number }}&producto={{ producto.pk|default:'' }}&tipo={{ tipo|default:'' }}">»</a>{% endif %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

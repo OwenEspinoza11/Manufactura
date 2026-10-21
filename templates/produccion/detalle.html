@@ -1,0 +1,143 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ op }}{% endblock %}
+{% block migas %}<a href="{% url 'op_lista' %}">Producción</a>{% endblock %}
+{% block encabezado %}{{ op.numero }} · {{ op.producto.nombre }} {% estado op %}{% endblock %}
+{% block acciones %}
+  {% if puede.produccion %}
+    {% if op.estado == 'BOR' %}<form method="post" action="{% url 'op_accion' op.pk 'confirmar' %}">{% csrf_token %}<button class="btn btn-sm btn-verde"><i class="bi bi-check2-circle"></i> Confirmar</button></form>{% endif %}
+    {% if op.estado == 'CON' %}<form method="post" action="{% url 'op_accion' op.pk 'iniciar' %}" data-confirmar="Se emitirán los materiales por lote (FEFO) y se creará el lote a producir. ¿Continuar?">{% csrf_token %}<button class="btn btn-sm btn-verde"><i class="bi bi-play-fill"></i> Iniciar y emitir materiales</button></form>{% endif %}
+    {% if op.estado in 'BOR CON' %}<form method="post" action="{% url 'op_accion' op.pk 'cancelar' %}" data-confirmar="¿Cancelar la orden?">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Cancelar</button></form>{% endif %}
+  {% endif %}
+{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card mb-3"><div class="card-body small">
+      <dl class="row mb-0">
+        <dt class="col-6">Producto</dt><dd class="col-6">{{ op.producto.codigo }}</dd>
+        <dt class="col-6">BOM / Ruta</dt><dd class="col-6"><a href="{% url 'bom_detalle' op.bom.pk %}?cantidad={{ op.cantidad_planificada|stringformat:'f' }}">v{{ op.bom.version }}</a> / v{{ op.ruta.version }}</dd>
+        <dt class="col-6">Planificada</dt><dd class="col-6">{{ op.cantidad_planificada|num:0 }} {{ op.producto.unidad }} · {{ op.fecha_planificada|date:"d/m/Y" }}</dd>
+        <dt class="col-6">Producida</dt><dd class="col-6">{{ op.cantidad_producida|num:0 }} {{ op.producto.unidad }}</dd>
+        <dt class="col-6">Lote</dt><dd class="col-6">{% if op.lote %}<a href="{% url 'lote_detalle' op.lote.pk %}">{{ op.lote }}</a> {% estado op.lote %}{% else %}se crea al iniciar{% endif %}</dd>
+        <dt class="col-6">Destino</dt><dd class="col-6">{{ op.almacen_destino }}</dd>
+        <dt class="col-6">Inicio / fin</dt><dd class="col-6">{{ op.fecha_inicio|date:"d/m H:i"|default:"—" }} → {{ op.fecha_fin|date:"d/m H:i"|default:"—" }}</dd>
+        <dt class="col-6">Tiempo de ciclo</dt><dd class="col-6">{% if op.tiempo_ciclo_h %}{{ op.tiempo_ciclo_h|num:2 }} h{% else %}—{% endif %}</dd>
+      </dl>
+    </div></div>
+    <div class="card mb-3">
+      <div class="card-header">Costeo del lote</div>
+      <table class="table table-sm mb-0">
+        <tr><td>Material (lotes consumidos)</td><td class="num">{{ op.costo_material|moneda }}</td></tr>
+        <tr><td>Conversión (min reales × C$/h)</td><td class="num">{{ op.costo_conversion|moneda }}</td></tr>
+        <tr class="fw-bold"><td>Total</td><td class="num">{{ op.costo_total|moneda }}</td></tr>
+        <tr class="fw-bold text-success"><td>Costo unitario</td><td class="num">{% if op.cantidad_producida %}{{ op.costo_unitario|moneda }}{% else %}—{% endif %}</td></tr>
+      </table>
+    </div>
+    {% if op.estado == 'PRO' and puede.produccion %}
+    <div class="card mb-3 border-success">
+      <div class="card-header">Cerrar orden</div>
+      <div class="card-body">
+        <form method="post" action="{% url 'op_terminar' op.pk %}" data-confirmar="Se ingresará el lote al inventario. ¿Confirmar cierre?">{% csrf_token %}
+          <label class="form-label small">Cantidad real producida ({{ op.producto.unidad }})</label>
+          <div class="input-group"><input class="form-control" name="cantidad" type="number" step="0.001" min="0.001" value="{{ op.cantidad_planificada|stringformat:'f' }}" required>
+          <button class="btn btn-verde"><i class="bi bi-flag-fill"></i> Terminar</button></div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+    {% if puede.produccion and op.estado == 'PRO' or puede.produccion and op.estado == 'TER' and op.lote.estado == 'RET' %}
+    <div class="card">
+      <div class="card-header">Consumo adicional (ajuste / retrabajo)</div>
+      <div class="card-body">
+        <form method="post" action="{% url 'op_consumo' op.pk %}">{% csrf_token %}
+          <div class="mb-2">{{ form_consumo.componente }}</div>
+          <div class="mb-2">{{ form_consumo.cantidad }}</div>
+          <div class="mb-2"><input name="motivo" class="form-control" placeholder="Motivo (obligatorio)" required></div>
+          <button class="btn btn-sm btn-outline-secondary">Registrar consumo</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-8">
+    {% if requerimientos %}
+    <div class="card mb-3">
+      <div class="card-header">Requerimiento de materiales (explosión de BOM para {{ op.cantidad_planificada|num:0 }} {{ op.producto.unidad }})</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Componente</th><th class="num">Requerido</th><th class="num">Disponible liberado</th><th class="num">Faltante</th></tr></thead>
+        {% for r in requerimientos %}
+          <tr class="{% if r.faltante %}table-danger{% endif %}"><td>{{ r.componente }}</td><td class="num">{{ r.requerido|num:3 }} {{ r.componente.unidad }}</td>
+          <td class="num">{{ r.disponible|num:3 }}</td><td class="num">{% if r.faltante %}{{ r.faltante|num:3 }}{% else %}<i class="bi bi-check-lg text-success"></i>{% endif %}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+
+    {% if registros %}
+    <div class="card mb-3">
+      <div class="card-header">Órdenes de trabajo por operación (ruta v{{ op.ruta.version }})</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Operación</th><th>Centro</th><th class="num">Std (min)</th><th class="num">Real (min)</th><th class="num">Paro</th><th>Estado</th><th style="min-width:250px"></th></tr></thead>
+        {% for r in registros %}
+          <tr>
+            <td><b>{{ r.operacion.codigo }}</b> {{ r.operacion.nombre }}</td><td class="small">{{ r.operacion.centro.codigo }}</td>
+            <td class="num">{{ r.tiempo_estandar_min|num:0 }}</td><td class="num">{{ r.duracion_min|num:1 }}</td>
+            <td class="num">{% if r.tiempo_paro_min %}{{ r.tiempo_paro_min|num:0 }} <span class="small text-muted d-block">{{ r.motivo_paro }}</span>{% else %}—{% endif %}</td>
+            <td>{% estado r %}{% if r.operador %}<div class="small text-muted">{{ r.operador }}</div>{% endif %}</td>
+            <td>
+              {% if puede.produccion and op.estado == 'PRO' %}
+                {% if r.estado == 'PEN' %}
+                  <form method="post" action="{% url 'op_operacion' r.pk 'iniciar' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-success"><i class="bi bi-play"></i> Iniciar</button></form>
+                {% elif r.estado == 'PRO' %}
+                  <form method="post" action="{% url 'op_operacion' r.pk 'terminar' %}" class="d-flex gap-1">{% csrf_token %}
+                    <input name="paro" type="number" step="1" min="0" class="form-control form-control-sm" style="width:70px" placeholder="paro">
+                    <input name="motivo" class="form-control form-control-sm" placeholder="motivo paro">
+                    <button class="btn btn-sm btn-success"><i class="bi bi-stop-fill"></i></button>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </table></div>
+    </div>
+    {% endif %}
+
+    {% if consumos %}
+    <div class="card mb-3">
+      <div class="card-header">Consumos reales por lote (trazabilidad hacia atrás)</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Componente</th><th>Lote consumido</th><th class="num">Cantidad</th><th class="num">Costo</th><th></th></tr></thead>
+        {% for c in consumos %}
+          <tr><td>{{ c.componente.nombre }}</td><td><a href="{% url 'lote_detalle' c.lote.pk %}">{{ c.lote }}</a></td>
+          <td class="num">{{ c.cantidad|num:3 }} {{ c.componente.unidad }}</td><td class="num">{{ c.costo|moneda }}</td>
+          <td>{% if c.adicional %}<span class="badge text-bg-warning" title="{{ c.motivo }}">adicional</span>{% endif %}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+
+    {% if inspecciones %}
+    <div class="card mb-3">
+      <div class="card-header">Calidad del lote</div>
+      <table class="table table-sm mb-0">
+        {% for i in inspecciones %}<tr><td><a href="{% url 'inspeccion_detalle' i.pk %}">{{ i.numero }}</a></td><td>{{ i.get_etapa_display }}</td><td>{{ i.fecha|date:"d/m H:i" }}</td><td>{% estado i 'resultado' %}</td></tr>{% endfor %}
+      </table>
+    </div>
+    {% elif op.estado == 'TER' and op.lote.estado == 'CUA' and puede.calidad %}
+      <a class="btn btn-outline-success mb-3" href="{% url 'inspeccion_nueva' %}?lote={{ op.lote.pk }}"><i class="bi bi-clipboard2-check"></i> Inspeccionar lote {{ op.lote }}</a>
+    {% endif %}
+
+    {% if lecturas %}
+    <div class="card">
+      <div class="card-header">Datos de planta capturados durante la orden (IIoT)</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Fecha</th><th>Sensor</th><th class="num">Valor</th><th></th></tr></thead>
+        {% for l in lecturas %}<tr><td class="small">{{ l.fecha|date:"d/m H:i:s" }}</td><td>{{ l.sensor.nombre }}</td><td class="num">{{ l.valor|floatformat:2 }} {{ l.sensor.unidad }}</td><td>{% if l.fuera_rango %}<span class="badge text-bg-danger">fuera de rango</span>{% endif %}</td></tr>{% endfor %}
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

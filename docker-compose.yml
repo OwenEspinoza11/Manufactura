@@ -1,0 +1,69 @@
+# ERP Blancos Aromáticos — pila completa (ISA-95 niveles 1 a 4)
+#   docker compose up --build      -> ERP en http://localhost:8000
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: erp
+      POSTGRES_USER: erp
+      POSTGRES_PASSWORD: erp
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"   # acceso desde el host para análisis (pandas / Power BI)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d erp"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: .
+    image: blancos-erp:latest
+    environment: &erp-env
+      POSTGRES_HOST: db
+      POSTGRES_DB: erp
+      POSTGRES_USER: erp
+      POSTGRES_PASSWORD: erp
+      DJANGO_DEBUG: "0"
+      DJANGO_SECRET_KEY: "cambie-esta-clave-en-produccion"
+      IIOT_TOKEN: "esp32-blancos-2026"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./iot/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  # Adapter MQTT -> ERP (nivel 2 -> nivel 3/4)
+  puente-mqtt:
+    image: blancos-erp:latest
+    command: python iot/mqtt_bridge.py
+    environment:
+      MQTT_HOST: ${MQTT_HOST:-mqtt}   # con Wokwi: MQTT_HOST=broker.hivemq.com
+      ERP_URL: http://web:8000
+      IIOT_TOKEN: "esp32-blancos-2026"
+    depends_on:
+      - web
+      - mqtt
+    restart: unless-stopped
+
+  # ESP32 emulado (niveles 0-1). Se puede reemplazar por el sketch de Wokwi en iot/esp32_wokwi
+  simulador-esp32:
+    image: blancos-erp:latest
+    command: python iot/simulador_esp32.py
+    environment:
+      MQTT_HOST: mqtt
+      INTERVALO_S: "5"
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+
+volumes:
+  pgdata:

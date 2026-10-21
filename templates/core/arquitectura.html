@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titulo %}Arquitectura{% endblock %}
+{% block migas %}Documentación viva del sistema{% endblock %}
+{% block encabezado %}Arquitectura según ISA-95 y flujo del dato{% endblock %}
+{% block head %}
+<style>
+  .nivel { border-radius: .6rem; padding: .9rem 1.1rem; margin-bottom: .5rem; border: 2px solid; }
+  .nivel h6 { margin: 0 0 .3rem; font-weight: 700; }
+  .real { border-color: #0f766e; background: #ecfdf5; }
+  .sim { border-color: #d97706; background: #fffbeb; border-style: dashed; }
+  .flecha { text-align: center; color: #6b7280; font-size: .8rem; margin: -.2rem 0 .3rem; }
+  .chip { display: inline-block; font-size: .72rem; padding: .1rem .5rem; border-radius: 1rem; background: #fff; border: 1px solid #d1d5db; margin: .1rem; }
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="nivel real">
+      <h6>Nivel 4 · ERP — Planificación y logística <span class="badge text-bg-success">implementado</span></h6>
+      <div class="small">Django 5.2 + PostgreSQL 16. Datos maestros, BOM multinivel, rutas, compras, inventario por lote (libro mayor), ventas y costos.</div>
+      <span class="chip">maestros</span><span class="chip">ingenieria</span><span class="chip">compras</span><span class="chip">inventario</span><span class="chip">ventas</span><span class="chip">kpi</span>
+    </div>
+    <div class="flecha"><i class="bi bi-arrow-down-up"></i> órdenes de producción, BOM, ruta ↓ · consumos, lotes, tiempos, calidad ↑ (misma base de datos, capa de servicios)</div>
+    <div class="nivel real">
+      <h6>Nivel 3 · MES — Ejecución de manufactura <span class="badge text-bg-success">implementado</span></h6>
+      <div class="small">Órdenes de trabajo por operación (inicio/fin/paros), consumo por lote FEFO, genealogía de lotes, inspecciones, no conformidades y disposición (scrap / retrabajo / liberación), OEE.</div>
+      <span class="chip">produccion</span><span class="chip">calidad</span><span class="chip">trazabilidad</span>
+    </div>
+    <div class="flecha"><i class="bi bi-arrow-up"></i> HTTP POST <code>/iiot/api/lecturas/</code> (JSON + token) — la lectura se vincula a la OP activa del centro de trabajo y a su lote</div>
+    <div class="nivel sim">
+      <h6>Nivel 2 · Supervisión / HMI <span class="badge text-bg-warning">prototipo</span></h6>
+      <div class="small">Panel de monitoreo IIoT dentro del ERP (Chart.js) + puente MQTT→ERP (patrón Adapter, <code>iot/mqtt_bridge.py</code>). Broker Mosquitto.</div>
+    </div>
+    <div class="flecha"><i class="bi bi-arrow-up"></i> MQTT · tópicos <code>blancosaromaticos/planta/tanque1/nivel</code>, <code>…/tanque1/ph</code>, <code>…/reactor1/temperatura</code>, <code>…/envasado/conteo</code></div>
+    <div class="nivel sim">
+      <h6>Niveles 1 y 0 · Control y sensores <span class="badge text-bg-warning">simulado</span></h6>
+      <div class="small">ESP32 emulado (<code>iot/simulador_esp32.py</code>) o sketch Wokwi (<code>iot/esp32_wokwi</code>): ultrasónico HC-SR04 (nivel T-01), sonda de pH, termopar del reactor, sensor IR de conteo en envasado. La planta no dispone de PLC industrial (declarado en la Entrega 1).</div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header">¿Dónde nace y dónde muere cada dato?</div>
+      <table class="table table-sm mb-0 small">
+        <thead><tr><th>Dato</th><th>Nace</th><th>Se usa / muere</th></tr></thead>
+        <tr><td>Lote de MP</td><td>Recepción de OC</td><td>Consumo en OP → genealogía del lote PT</td></tr>
+        <tr><td>Costo real</td><td>Precio de OC + minutos reales × costo/hora</td><td>Costo unitario del lote → costo de ventas → rotación</td></tr>
+        <tr><td>Tiempo de operación y paro</td><td>Registro de operación (MES)</td><td>OEE (disponibilidad y rendimiento)</td></tr>
+        <tr><td>pH / nivel / temperatura</td><td>Sensor ESP32 (nivel 0-1)</td><td>Lectura ligada a OP y lote → alerta → decisión de calidad</td></tr>
+        <tr><td>Resultado de calidad</td><td>Inspección del lote</td><td>Liberación o NC → disposición → yield, FPY, OEE-calidad</td></tr>
+        <tr><td>Despacho</td><td>Pedido de venta confirmado</td><td>Salida FEFO por lote → trazabilidad hacia el cliente</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-header">Patrones de diseño aplicados</div>
+      <ul class="list-group list-group-flush small">
+        <li class="list-group-item"><b>Capas + Service Layer</b>: vistas → <code>services.py</code> → modelos.</li>
+        <li class="list-group-item"><b>Unit of Work</b>: <code>transaction.atomic</code> en cada transición.</li>
+        <li class="list-group-item"><b>State</b>: estados de OC, OP, pedido y NC con transiciones validadas.</li>
+        <li class="list-group-item"><b>Ledger</b>: movimientos inmutables; existencia = suma.</li>
+        <li class="list-group-item"><b>Composite</b>: explosión recursiva de la BOM (<code>NodoBOM</code>).</li>
+        <li class="list-group-item"><b>Strategy</b>: disposición de no conformidades.</li>
+        <li class="list-group-item"><b>Observer</b>: señal que genera alertas por lecturas fuera de rango.</li>
+        <li class="list-group-item"><b>Adapter</b>: puente MQTT → API HTTP del ERP.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

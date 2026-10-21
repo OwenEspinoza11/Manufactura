@@ -1,0 +1,109 @@
+{% extends "base.html" %}{% load static erp %}
+{% block titulo %}Tablero{% endblock %}
+{% block migas %}Productos Químicos de Limpieza Blancos Aromáticos{% endblock %}
+{% block encabezado %}Tablero de planta{% endblock %}
+{% block acciones %}
+  {% if puede.compras %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'oc_nueva' %}"><i class="bi bi-cart-plus"></i> Orden de compra</a>{% endif %}
+  {% if puede.produccion %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'op_nueva' %}"><i class="bi bi-plus-circle"></i> Orden de producción</a>{% endif %}
+  {% if puede.ventas %}<a class="btn btn-sm btn-verde" href="{% url 'pv_nuevo' %}"><i class="bi bi-bag-plus"></i> Pedido de venta</a>{% endif %}
+{% endblock %}
+{% block contenido %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-2"><div class="card kpi h-100"><div class="card-body">
+    <div class="etiqueta">OEE</div>
+    <div class="valor text-{{ oee.oee|semaforo:'0.85,0.65' }}">{{ oee.oee|pct }}</div>
+    <div class="detalle">D {{ oee.disponibilidad|pct:0 }} · R {{ oee.rendimiento|pct:0 }} · C {{ oee.calidad|pct:0 }}</div>
+  </div></div></div>
+  <div class="col-6 col-xl-2"><div class="card kpi h-100"><div class="card-body">
+    <div class="etiqueta">Yield de producción</div>
+    <div class="valor text-{{ yield.yield|semaforo:'0.97,0.90' }}">{{ yield.yield|pct }}</div>
+    <div class="detalle">{{ yield.buenas|num:0 }} buenas / {{ yield.planificado|num:0 }} plan.</div>
+  </div></div></div>
+  <div class="col-6 col-xl-2"><div class="card kpi h-100"><div class="card-body">
+    <div class="etiqueta">FPY calidad</div>
+    <div class="valor text-{{ fpy.fpy|semaforo:'0.95,0.85' }}">{{ fpy.fpy|pct }}</div>
+    <div class="detalle">{{ fpy.aprobados }}/{{ fpy.inspeccionados }} lotes · {{ fpy.nc_abiertas }} NC abiertas</div>
+  </div></div></div>
+  <div class="col-6 col-xl-2"><div class="card kpi h-100"><div class="card-body">
+    <div class="etiqueta">Rotación PT (30 d)</div>
+    <div class="valor">{{ rotacion.rotacion|num:2 }}×</div>
+    <div class="detalle">{% if rotacion.dias_inventario %}{{ rotacion.dias_inventario|num:0 }} días de inventario{% else %}sin ventas en el periodo{% endif %}</div>
+  </div></div></div>
+  <div class="col-6 col-xl-2"><div class="card kpi h-100"><div class="card-body">
+    <div class="etiqueta">Costo unitario PT</div>
+    <div class="valor">{{ costo_unitario_pt|moneda }}</div>
+    <div class="detalle">promedio real por unidad (1 L)</div>
+  </div></div></div>
+  <div class="col-6 col-xl-2"><div class="card kpi h-100" style="background:#ecfdf5"><div class="card-body">
+    <div class="etiqueta text-success"><i class="bi bi-recycle"></i> Aceite recuperado</div>
+    <div class="valor text-success">{{ sostenibilidad.aceite_recuperado_l|num:0 }} L</div>
+    <div class="detalle">≈ {{ sostenibilidad.agua_protegida_l|num:0 }} L de agua protegidos*</div>
+  </div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header">Producción terminada por semana (unidades de 1 L)</div>
+      <div class="card-body"><canvas id="grafSemanal" height="140"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between">Órdenes en proceso <a href="{% url 'op_lista' %}?estado=PRO" class="small">ver</a></div>
+      <ul class="list-group list-group-flush">
+        {% for op in en_proceso %}
+          <li class="list-group-item d-flex justify-content-between"><a href="{% url 'op_detalle' op.pk %}">{{ op.numero }}</a><span class="text-muted small">{{ op.producto.nombre }} · {{ op.cantidad_planificada|num:0 }} · lote {{ op.lote }}</span></li>
+        {% empty %}<li class="list-group-item text-muted small">Ninguna orden en proceso.</li>{% endfor %}
+      </ul>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between">Alertas IIoT sin atender <span class="badge text-bg-{% if alertas_iiot_total %}danger{% else %}success{% endif %}">{{ alertas_iiot_total }}</span></div>
+      <ul class="list-group list-group-flush">
+        {% for a in alertas_iiot %}<li class="list-group-item small"><i class="bi bi-exclamation-triangle text-danger"></i> {{ a.mensaje }} <span class="text-muted">· {{ a.fecha|date:"d/m H:i" }}</span></li>
+        {% empty %}<li class="list-group-item text-muted small">Sin alertas.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Lotes pendientes de calidad</div>
+      <ul class="list-group list-group-flush">
+        {% for l in cuarentena %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{% url 'lote_detalle' l.pk %}">{{ l.codigo }}</a>{% estado l %}
+          </li>
+        {% empty %}<li class="list-group-item text-muted small">Nada pendiente.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">No conformidades abiertas</div>
+      <ul class="list-group list-group-flush">
+        {% for nc in ncs %}
+          <li class="list-group-item"><a href="{% url 'nc_detalle' nc.pk %}">{{ nc.numero }}</a> {% estado nc %}<div class="small text-muted">{{ nc.lote }} · {{ nc.descripcion|truncatechars:70 }}</div></li>
+        {% empty %}<li class="list-group-item text-muted small">Sin no conformidades abiertas.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Inventario bajo mínimo (RF-12)</div>
+      <ul class="list-group list-group-flush">
+        {% for a in stock_bajo %}
+          <li class="list-group-item d-flex justify-content-between small"><span>{{ a.producto }}</span><span class="text-danger">{{ a.existencia|num:1 }} / {{ a.minimo|num:0 }} {{ a.producto.unidad }}</span></li>
+        {% empty %}<li class="list-group-item text-muted small">Todo sobre el mínimo.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+<p class="small text-muted mt-3">* Estimación referencial: {{ sostenibilidad.factor }} L de agua por litro de aceite usado no vertido al drenaje. Ver informe para la fuente.</p>
+{{ semanal|json_script:"datos-semanal" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/graficos.js' %}"></script>
+<script>graficoSemanal('grafSemanal', JSON.parse(document.getElementById('datos-semanal').textContent));</script>
+{% endblock %}

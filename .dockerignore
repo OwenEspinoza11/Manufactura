@@ -1,0 +1,7 @@
+.git
+**/__pycache__
+db.sqlite3
+staticfiles
+*.pdf
+analisis/salida
+.pytest_cache

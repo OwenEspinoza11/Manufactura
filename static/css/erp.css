@@ -1,0 +1,49 @@
+:root {
+  --erp-verde: #0f766e;
+  --erp-verde-osc: #0b4f4a;
+  --erp-fondo: #f4f6f8;
+  --erp-lateral: 236px;
+}
+
+body { background: var(--erp-fondo); font-size: .925rem; }
+
+.erp-lateral {
+  width: var(--erp-lateral); min-height: 100vh; position: fixed; top: 0; left: 0;
+  background: var(--erp-verde-osc); color: #cfe7e4; overflow-y: auto; z-index: 1030;
+}
+.erp-lateral .marca { padding: 1rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,.08); }
+.erp-lateral .marca b { color: #fff; font-size: 1.02rem; display: block; line-height: 1.2; }
+.erp-lateral .marca small { color: #8fc9c2; font-size: .72rem; }
+.erp-lateral .seccion { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: #7fb6af; padding: .9rem 1.1rem .3rem; }
+.erp-lateral a { display: flex; gap: .6rem; align-items: center; color: #d7ecea; text-decoration: none; padding: .38rem 1.1rem; font-size: .88rem; }
+.erp-lateral a:hover, .erp-lateral a.activo { background: rgba(255,255,255,.08); color: #fff; }
+.erp-lateral a .bi { width: 1.1rem; opacity: .85; }
+
+.erp-contenido { margin-left: var(--erp-lateral); padding: 1.25rem 1.6rem 3rem; }
+.erp-barra { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap; }
+.erp-barra h1 { font-size: 1.35rem; margin: 0; font-weight: 600; }
+.erp-barra .migas { font-size: .8rem; color: #6b7280; }
+
+.card { border: 0; box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08); }
+.card-header { background: #fff; font-weight: 600; border-bottom: 1px solid #eef0f2; }
+.kpi .valor { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+.kpi .etiqueta { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
+.kpi .detalle { font-size: .78rem; color: #6b7280; }
+.table { font-size: .87rem; }
+.table thead th { font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; font-weight: 600; background: #fafbfc; }
+.table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.btn-verde { background: var(--erp-verde); border-color: var(--erp-verde); color: #fff; }
+.btn-verde:hover { background: var(--erp-verde-osc); color: #fff; }
+.paso { counter-increment: paso; }
+.arbol td:first-child { white-space: nowrap; }
+.lectura-grande { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 992px) {
+  .erp-lateral { position: static; width: 100%; min-height: auto; }
+  .erp-contenido { margin-left: 0; padding: 1rem; }
+}
+
+@media print {
+  .erp-lateral, .no-imprimir { display: none !important; }
+  .erp-contenido { margin-left: 0; }
+}

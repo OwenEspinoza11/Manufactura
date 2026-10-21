@@ -1,0 +1,84 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}ERP{% endblock %} · Blancos Aromáticos</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/erp.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% with url=request.resolver_match.url_name %}
+<nav class="erp-lateral">
+  <div class="marca">
+    <b><i class="bi bi-droplet-half"></i> Blancos Aromáticos</b>
+    <small>ERP · MES · IIoT — Tipitapa, Nicaragua</small>
+  </div>
+  <a href="{% url 'inicio' %}" class="{% if url == 'inicio' %}activo{% endif %}"><i class="bi bi-speedometer2"></i> Tablero</a>
+
+  <div class="seccion">Operación</div>
+  <a href="{% url 'oc_lista' %}" class="{% if url|slice:':3' == 'oc_' %}activo{% endif %}"><i class="bi bi-cart3"></i> Compras</a>
+  <a href="{% url 'op_lista' %}" class="{% if url|slice:':3' == 'op_' %}activo{% endif %}"><i class="bi bi-gear-wide-connected"></i> Producción (MES)</a>
+  <a href="{% url 'inspecciones' %}" class="{% if url|slice:':4' == 'insp' %}activo{% endif %}"><i class="bi bi-clipboard2-check"></i> Inspecciones</a>
+  <a href="{% url 'nc_lista' %}" class="{% if url|slice:':3' == 'nc_' %}activo{% endif %}"><i class="bi bi-exclamation-octagon"></i> No conformidades</a>
+  <a href="{% url 'pv_lista' %}" class="{% if url|slice:':3' == 'pv_' %}activo{% endif %}"><i class="bi bi-truck"></i> Ventas y despacho</a>
+
+  <div class="seccion">Inventario</div>
+  <a href="{% url 'existencias' %}" class="{% if url == 'existencias' %}activo{% endif %}"><i class="bi bi-box-seam"></i> Existencias</a>
+  <a href="{% url 'lotes' %}" class="{% if url|slice:':4' == 'lote' %}activo{% endif %}"><i class="bi bi-upc-scan"></i> Lotes y trazabilidad</a>
+  <a href="{% url 'kardex' %}" class="{% if url == 'kardex' %}activo{% endif %}"><i class="bi bi-journal-text"></i> Kardex</a>
+
+  <div class="seccion">Planta e indicadores</div>
+  <a href="{% url 'iiot_panel' %}" class="{% if url|slice:':4' == 'iiot' %}activo{% endif %}"><i class="bi bi-broadcast"></i> Monitoreo IIoT</a>
+  <a href="{% url 'kpi_tablero' %}" class="{% if url|slice:':3' == 'kpi' %}activo{% endif %}"><i class="bi bi-graph-up-arrow"></i> Indicadores KPI</a>
+
+  <div class="seccion">Ingeniería y maestros</div>
+  <a href="{% url 'bom_lista' %}" class="{% if url|slice:':3' == 'bom' %}activo{% endif %}"><i class="bi bi-diagram-3"></i> BOM y rutas</a>
+  <a href="{% url 'productos_lista' %}" class="{% if url|slice:':9' == 'productos' %}activo{% endif %}"><i class="bi bi-tags"></i> Productos</a>
+  <a href="{% url 'proveedores_lista' %}" class="{% if url|slice:':11' == 'proveedores' %}activo{% endif %}"><i class="bi bi-building"></i> Proveedores</a>
+  <a href="{% url 'clientes_lista' %}" class="{% if url|slice:':8' == 'clientes' %}activo{% endif %}"><i class="bi bi-people"></i> Clientes</a>
+  <a href="{% url 'almacenes_lista' %}" class="{% if url|slice:':9' == 'almacenes' %}activo{% endif %}"><i class="bi bi-house-door"></i> Almacenes</a>
+  <a href="{% url 'centros_lista' %}" class="{% if url|slice:':7' == 'centros' %}activo{% endif %}"><i class="bi bi-cpu"></i> Centros de trabajo</a>
+  <a href="{% url 'unidades_lista' %}" class="{% if url|slice:':8' == 'unidades' %}activo{% endif %}"><i class="bi bi-rulers"></i> Unidades de medida</a>
+  <a href="{% url 'arquitectura' %}" class="{% if url == 'arquitectura' %}activo{% endif %}"><i class="bi bi-layers"></i> Arquitectura ISA-95</a>
+  {% if user.is_staff %}<a href="{% url 'admin:index' %}"><i class="bi bi-sliders"></i> Administración</a>{% endif %}
+
+  <div class="seccion">Sesión</div>
+  <div class="px-3 pb-3 small">
+    <div class="text-white">{{ user.get_full_name|default:user.username }}</div>
+    <div class="text-white-50">{{ mis_roles|join:", "|default:"Sin rol" }}</div>
+    <form method="post" action="{% url 'logout' %}" class="mt-2">{% csrf_token %}
+      <button class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i> Salir</button>
+    </form>
+  </div>
+</nav>
+{% endwith %}
+
+<main class="erp-contenido">
+  <div class="erp-barra">
+    <div>
+      <div class="migas">{% block migas %}{% endblock %}</div>
+      <h1>{% block encabezado %}{% endblock %}</h1>
+    </div>
+    <div class="d-flex gap-2 no-imprimir">{% block acciones %}{% endblock %}</div>
+  </div>
+  {% for m in messages %}
+    <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} alert-dismissible fade show py-2">
+      {{ m }}<button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+  {% block contenido %}{% endblock %}
+</main>
+<script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
+<script>
+  // Estilo Bootstrap para los widgets que genera Django
+  document.querySelectorAll('main form input:not([type=checkbox]):not([type=hidden]):not(.form-control), main form textarea').forEach(e => e.classList.add('form-control'));
+  document.querySelectorAll('main form select').forEach(e => e.classList.add('form-select'));
+  document.querySelectorAll('main form input[type=checkbox]').forEach(e => e.classList.add('form-check-input'));
+  document.querySelectorAll('form[data-confirmar]').forEach(f => f.addEventListener('submit', ev => { if (!confirm(f.dataset.confirmar)) ev.preventDefault(); }));
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
