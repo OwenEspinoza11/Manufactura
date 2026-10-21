@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Compras{% endblock %}
+{% block migas %}Compras y abastecimiento{% endblock %}
+{% block encabezado %}Órdenes de compra{% endblock %}
+{% block acciones %}{% if puede.compras %}<a class="btn btn-verde btn-sm" href="{% url 'oc_nueva' %}"><i class="bi bi-plus-lg"></i> Nueva orden</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="card">
+  <div class="card-body pb-0">
+    <div class="btn-group btn-group-sm mb-3">
+      <a class="btn btn-outline-secondary {% if not estado %}active{% endif %}" href="?">Todas</a>
+      {% for c, n in estados %}<a class="btn btn-outline-secondary {% if estado == c %}active{% endif %}" href="?estado={{ c }}">{{ n }}</a>{% endfor %}
+    </div>
+  </div>
+  <div class="table-responsive"><table class="table table-hover mb-0">
+    <thead><tr><th>Número</th><th>Proveedor</th><th>Fecha</th><th>Esperada</th><th class="num">Total</th><th>Estado</th></tr></thead>
+    {% for o in ordenes %}
+      <tr><td><a href="{% url 'oc_detalle' o.pk %}">{{ o.numero }}</a></td><td>{{ o.proveedor.nombre }}</td><td>{{ o.fecha|date:"d/m/Y" }}</td>
+      <td>{{ o.fecha_esperada|date:"d/m/Y"|default:"—" }}</td><td class="num">{{ o.total|moneda }}</td><td>{% estado o %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Sin órdenes.</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

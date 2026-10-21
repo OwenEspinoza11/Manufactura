@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ orden }}{% endblock %}
+{% block migas %}<a href="{% url 'oc_lista' %}">Compras</a>{% endblock %}
+{% block encabezado %}{{ orden.numero }} {% estado orden %}{% endblock %}
+{% block acciones %}
+  {% if orden.estado == 'BOR' and puede.compras %}
+    <form method="post" action="{% url 'oc_accion' orden.pk 'confirmar' %}">{% csrf_token %}<button class="btn btn-sm btn-verde"><i class="bi bi-check2-circle"></i> Confirmar</button></form>
+  {% endif %}
+  {% if orden.estado in 'CON PAR' and puede.recepcion %}
+    <a class="btn btn-sm btn-verde" href="{% url 'oc_recibir' orden.pk %}"><i class="bi bi-box-arrow-in-down"></i> Registrar recepción</a>
+  {% endif %}
+  {% if orden.estado in 'BOR CON' and puede.compras %}
+    <form method="post" action="{% url 'oc_accion' orden.pk 'cancelar' %}" data-confirmar="¿Cancelar la orden?">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Cancelar</button></form>
+  {% endif %}
+{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card"><div class="card-body small">
+      <dl class="row mb-0">
+        <dt class="col-5">Proveedor</dt><dd class="col-7">{{ orden.proveedor.nombre }}<br><span class="text-muted">{{ orden.proveedor.get_tipo_display }}</span></dd>
+        <dt class="col-5">Fecha</dt><dd class="col-7">{{ orden.fecha|date:"d/m/Y" }}</dd>
+        <dt class="col-5">Esperada</dt><dd class="col-7">{{ orden.fecha_esperada|date:"d/m/Y"|default:"—" }}</dd>
+        <dt class="col-5">Almacén destino</dt><dd class="col-7">{{ orden.almacen_destino }}</dd>
+        <dt class="col-5">Creada por</dt><dd class="col-7">{{ orden.creado_por|default:"—" }}</dd>
+        <dt class="col-5">Total</dt><dd class="col-7 fw-bold">{{ orden.total|moneda }}</dd>
+      </dl>
+      {% if orden.notas %}<hr><p class="mb-0">{{ orden.notas }}</p>{% endif %}
+    </div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header">Líneas</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Material</th><th class="num">Cantidad</th><th class="num">Recibido</th><th class="num">Precio</th><th class="num">Subtotal</th></tr></thead>
+        {% for l in lineas %}
+          <tr><td>{{ l.producto }}</td><td class="num">{{ l.cantidad|num:2 }} {{ l.producto.unidad }}</td>
+          <td class="num {% if l.pendiente %}text-warning{% else %}text-success{% endif %}">{{ l.cantidad_recibida|num:2 }}</td>
+          <td class="num">{{ l.precio_unitario|moneda }}</td><td class="num">{{ l.subtotal|moneda }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-header">Recepciones y lotes generados</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Recepción</th><th>Fecha</th><th>Material</th><th>Lote</th><th class="num">Cantidad</th><th>Estado lote</th></tr></thead>
+        {% for r in recepciones %}{% for lr in r.lineas.all %}
+          <tr><td>{{ r.numero }}</td><td>{{ r.fecha|date:"d/m/Y H:i" }}</td><td>{{ lr.linea_orden.producto.nombre }}</td>
+          <td><a href="{% url 'lote_detalle' lr.lote.pk %}">{{ lr.lote }}</a></td><td class="num">{{ lr.cantidad|num:2 }}</td><td>{% estado lr.lote %}</td></tr>
+        {% endfor %}{% empty %}<tr><td colspan="6" class="text-muted text-center">Aún no hay recepciones.</td></tr>{% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

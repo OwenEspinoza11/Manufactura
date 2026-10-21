@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva orden de compra{% endblock %}
+{% block migas %}<a href="{% url 'oc_lista' %}">Compras</a>{% endblock %}
+{% block encabezado %}Nueva orden de compra{% endblock %}
+{% block contenido %}
+<form method="post">{% csrf_token %}
+  <div class="card mb-3"><div class="card-header">Encabezado</div><div class="card-body">{% include "core/_campos.html" with form=form %}</div></div>
+  <div class="card mb-3"><div class="card-header">Materiales a comprar</div><div class="card-body">{% include "core/_formset.html" %}</div></div>
+  <button class="btn btn-verde"><i class="bi bi-check-lg"></i> Crear en borrador</button>
+  <a class="btn btn-outline-secondary" href="{% url 'oc_lista' %}">Cancelar</a>
+</form>
+{% endblock %}

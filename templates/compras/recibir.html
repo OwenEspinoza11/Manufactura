@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Recepción {{ orden }}{% endblock %}
+{% block migas %}<a href="{% url 'oc_lista' %}">Compras</a> / <a href="{% url 'oc_detalle' orden.pk %}">{{ orden.numero }}</a>{% endblock %}
+{% block encabezado %}Recepción de material · {{ orden.proveedor.nombre }}{% endblock %}
+{% block contenido %}
+<div class="alert alert-info py-2 small"><i class="bi bi-info-circle"></i> Cada línea recibida genera un <b>lote</b> y un movimiento de entrada en <b>{{ orden.almacen_destino }}</b>. Los materiales con control de recepción (p. ej. aceite usado) quedan en cuarentena hasta su inspección.</div>
+<form method="post" class="card">{% csrf_token %}
+  <div class="table-responsive"><table class="table align-middle mb-0">
+    <thead><tr><th>Material</th><th class="num">Pendiente</th><th style="width:140px">Recibir</th><th>Lote del proveedor</th><th>Vencimiento</th></tr></thead>
+    {% for l in lineas %}
+      <tr>
+        <td>{{ l.producto }}</td>
+        <td class="num">{{ l.pendiente|num:2 }} {{ l.producto.unidad }}</td>
+        <td><input class="form-control form-control-sm" name="cant_{{ l.pk }}" type="number" step="0.001" min="0" max="{{ l.pendiente|stringformat:'f' }}" value="{{ l.pendiente|stringformat:'f' }}" {% if not l.pendiente %}disabled{% endif %}></td>
+        <td><input class="form-control form-control-sm" name="lote_{{ l.pk }}" placeholder="opcional"></td>
+        <td><input class="form-control form-control-sm" name="venc_{{ l.pk }}" type="date"></td>
+      </tr>
+    {% endfor %}
+  </table></div>
+  <div class="card-body">
+    <textarea class="form-control mb-3" name="notas" rows="2" placeholder="Observaciones (estado del transporte, remisión, etc.)"></textarea>
+    <button class="btn btn-verde"><i class="bi bi-box-arrow-in-down"></i> Registrar recepción</button>
+  </div>
+</form>
+{% endblock %}
