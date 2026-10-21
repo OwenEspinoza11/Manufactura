@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% load static erp %}
+{% block titulo %}Monitoreo IIoT{% endblock %}
+{% block migas %}Nivel 2 ISA-95 · HMI de supervisión — se actualiza cada 3 s{% endblock %}
+{% block encabezado %}Monitoreo de planta (IIoT){% endblock %}
+{% block contenido %}
+<div class="row g-3 mb-3">
+  {% for x in sensores %}
+  <div class="col-md-6 col-xl-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div class="small text-muted">{{ x.s.dispositivo.centro.codigo|default:"" }} · {{ x.s.get_tipo_display }}</div>
+          <i class="bi bi-broadcast-pin text-success"></i>
+        </div>
+        <div class="fw-semibold">{{ x.s.nombre }}</div>
+        <div><span class="lectura-grande" data-valor-de="s{{ x.s.pk }}">{{ x.ultima.valor|floatformat:2|default:"—" }}</span> <span class="text-muted">{{ x.s.unidad }}</span></div>
+        <div class="small text-muted">Rango: {{ x.s.minimo|default_if_none:"—" }} – {{ x.s.maximo|default_if_none:"—" }} · OP: <span data-orden-de="s{{ x.s.pk }}">{{ x.orden|default:"sin orden activa" }}</span></div>
+        <canvas id="s{{ x.s.pk }}" data-url="{% url 'iiot_serie' x.s.pk %}" height="130" class="mt-2"></canvas>
+        <div class="small text-muted mt-1"><code>{{ x.s.topico }}</code></div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">Alertas sin atender
+      {% if alertas and puede.iiot %}<form method="post" action="{% url 'iiot_atender_todas' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Atender todas</button></form>{% endif %}
+    </div>
+    <table class="table table-sm mb-0">
+      {% for a in alertas %}
+        <tr><td class="small">{{ a.fecha|date:"d/m H:i:s" }}</td><td class="small"><i class="bi bi-exclamation-triangle text-danger"></i> {{ a.mensaje }}</td>
+        <td>{% if a.orden %}<a href="{% url 'op_detalle' a.orden.pk %}" class="small">{{ a.orden }}</a>{% endif %}</td>
+        <td class="text-end">{% if puede.iiot %}<form method="post" action="{% url 'iiot_atender' a.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link">atender</button></form>{% endif %}</td></tr>
+      {% empty %}<tr><td class="text-muted small">Sin alertas pendientes.</td></tr>{% endfor %}
+    </table>
+  </div></div>
+  <div class="col-lg-5"><div class="card">
+    <div class="card-header">Dispositivos</div>
+    <table class="table table-sm mb-0">
+      {% for d in dispositivos %}<tr><td><b>{{ d.codigo }}</b><div class="small text-muted">{{ d.nombre }}</div></td><td class="small">{{ d.centro|default:"" }}</td><td class="small">{{ d.ultima_conexion|date:"d/m H:i:s"|default:"nunca" }}</td></tr>{% endfor %}
+    </table>
+    <div class="card-body small text-muted border-top">
+      Flujo: ESP32 → MQTT (<code>{{ mqtt_prefijo }}/#</code>) → puente Python → <code>POST /iiot/api/lecturas/</code> → lectura ligada a la OP en curso y a su lote.
+    </div>
+  </div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/graficos.js' %}"></script>
+<script>document.querySelectorAll('canvas[data-url]').forEach(c => graficoSensor(c, c.dataset.url, 3000));</script>
+{% endblock %}
