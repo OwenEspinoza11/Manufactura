@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ i }}{% endblock %}
+{% block migas %}<a href="{% url 'inspecciones' %}">Inspecciones</a>{% endblock %}
+{% block encabezado %}{{ i.numero }} {% estado i 'resultado' %}{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-4"><div class="card"><div class="card-body small">
+    <dl class="row mb-0">
+      <dt class="col-5">Lote</dt><dd class="col-7"><a href="{% url 'lote_detalle' i.lote.pk %}">{{ i.lote }}</a></dd>
+      <dt class="col-5">Producto</dt><dd class="col-7">{{ i.lote.producto.nombre }}</dd>
+      <dt class="col-5">Etapa</dt><dd class="col-7">{{ i.get_etapa_display }}</dd>
+      <dt class="col-5">Orden</dt><dd class="col-7">{% if i.orden %}<a href="{% url 'op_detalle' i.orden.pk %}">{{ i.orden }}</a>{% else %}—{% endif %}</dd>
+      <dt class="col-5">Fecha</dt><dd class="col-7">{{ i.fecha|date:"d/m/Y H:i" }}</dd>
+      <dt class="col-5">Inspector</dt><dd class="col-7">{{ i.inspector|default:"—" }}</dd>
+    </dl>
+    {% if i.observaciones %}<hr>{{ i.observaciones }}{% endif %}
+  </div></div></div>
+  <div class="col-lg-8"><div class="card">
+    <table class="table mb-0">
+      <thead><tr><th>Parámetro</th><th>Especificación</th><th class="num">Valor</th><th>Conforme</th></tr></thead>
+      {% for r in resultados %}<tr class="{% if not r.conforme %}table-danger{% endif %}"><td>{{ r.parametro.nombre }}</td><td>{{ r.parametro.rango }}</td><td class="num">{{ r.valor|num:3 }}</td>
+      <td>{% if r.conforme %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>{% endfor %}
+    </table>
+    {% for nc in i.no_conformidades.all %}<div class="card-body border-top"><a href="{% url 'nc_detalle' nc.pk %}">{{ nc.numero }}</a> {% estado nc %}</div>{% endfor %}
+  </div></div>
+</div>
+{% endblock %}

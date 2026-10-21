@@ -1,0 +1,61 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ nc }}{% endblock %}
+{% block migas %}<a href="{% url 'nc_lista' %}">No conformidades</a>{% endblock %}
+{% block encabezado %}{{ nc.numero }} {% estado nc %}{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card mb-3"><div class="card-body">
+      <dl class="row small mb-0">
+        <dt class="col-4">Lote</dt><dd class="col-8"><a href="{% url 'lote_detalle' nc.lote.pk %}">{{ nc.lote }}</a> {% estado nc.lote %}</dd>
+        <dt class="col-4">Producto</dt><dd class="col-8">{{ nc.lote.producto }}</dd>
+        <dt class="col-4">Origen</dt><dd class="col-8">{% if nc.inspeccion %}<a href="{% url 'inspeccion_detalle' nc.inspeccion.pk %}">{{ nc.inspeccion }}</a>{% else %}—{% endif %}</dd>
+        <dt class="col-4">Cantidad afectada</dt><dd class="col-8">{{ nc.cantidad_afectada|num:2 }} {{ nc.lote.producto.unidad }}</dd>
+        <dt class="col-4">Descripción</dt><dd class="col-8">{{ nc.descripcion }}</dd>
+        {% if nc.causa_raiz %}<dt class="col-4">Causa raíz</dt><dd class="col-8">{{ nc.causa_raiz }}</dd>{% endif %}
+        {% if nc.disposicion %}
+          <dt class="col-4">Disposición</dt><dd class="col-8"><b>{{ nc.get_disposicion_display }}</b> · {{ nc.fecha_disposicion|date:"d/m/Y H:i" }} · {{ nc.responsable_disposicion|default:"" }}</dd>
+          <dt class="col-4">Justificación</dt><dd class="col-8">{{ nc.comentario_disposicion|linebreaksbr }}</dd>
+          {% if nc.cantidad_scrap %}<dt class="col-4">Enviado a scrap</dt><dd class="col-8 text-danger">{{ nc.cantidad_scrap|num:2 }} {{ nc.lote.producto.unidad }}</dd>{% endif %}
+        {% endif %}
+        {% if nc.fecha_cierre %}<dt class="col-4">Cierre</dt><dd class="col-8">{{ nc.fecha_cierre|date:"d/m/Y H:i" }}</dd>{% endif %}
+      </dl>
+    </div></div>
+    {% if resultados %}
+    <div class="card"><div class="card-header">Resultados de la inspección</div>
+      <table class="table table-sm mb-0">
+        {% for r in resultados %}<tr class="{% if not r.conforme %}table-danger{% endif %}"><td>{{ r.parametro.nombre }}</td><td>{{ r.parametro.rango }}</td><td class="num">{{ r.valor|num:3 }}</td></tr>{% endfor %}
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-6">
+    {% if nc.estado == 'ABI' and puede.calidad %}
+    <div class="card border-danger">
+      <div class="card-header">Disposición de la no conformidad</div>
+      <div class="card-body">
+        <form method="post" action="{% url 'nc_disponer' nc.pk %}" data-confirmar="La disposición afecta el inventario y el estado del lote. ¿Confirmar?">{% csrf_token %}
+          {% for c, n in disposiciones %}
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="radio" name="disposicion" value="{{ c }}" id="d{{ c }}" required>
+              <label class="form-check-label" for="d{{ c }}"><b>{{ n }}</b>
+                <div class="small text-muted">
+                  {% if c == 'SCR' %}Todo el saldo del lote se traslada al almacén de scrap y el lote queda rechazado (afecta yield y OEE-calidad).
+                  {% elif c == 'RET' %}El lote queda retenido en retrabajo; registre el consumo correctivo en la orden y una nueva inspección para liberarlo.
+                  {% else %}El lote se libera para uso/venta con desviación aceptada y documentada.{% endif %}
+                </div>
+              </label>
+            </div>
+          {% endfor %}
+          <textarea class="form-control mb-2" name="causa_raiz" rows="2" placeholder="Causa raíz (5 porqués / Ishikawa)"></textarea>
+          <textarea class="form-control mb-3" name="comentario" rows="2" placeholder="Justificación de la disposición (obligatoria)" required></textarea>
+          <button class="btn btn-danger"><i class="bi bi-check2-square"></i> Aplicar disposición</button>
+        </form>
+      </div>
+    </div>
+    {% elif nc.estado == 'RET' %}
+      <div class="alert alert-info">Lote en retrabajo. Cuando se corrija, registre una <a href="{% url 'inspeccion_nueva' %}?lote={{ nc.lote.pk }}">nueva inspección</a>: si aprueba, la NC se cierra automáticamente.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

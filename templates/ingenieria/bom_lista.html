@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}BOM y rutas{% endblock %}
+{% block migas %}Ingeniería de producto{% endblock %}
+{% block encabezado %}Listas de materiales (BOM) y rutas de fabricación{% endblock %}
+{% block acciones %}{% if user.is_staff %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'admin:ingenieria_bom_changelist' %}"><i class="bi bi-pencil"></i> Editar BOM</a><a class="btn btn-sm btn-outline-secondary" href="{% url 'admin:ingenieria_ruta_changelist' %}"><i class="bi bi-pencil"></i> Editar rutas</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-6"><div class="card">
+    <div class="card-header">BOM</div>
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Producto</th><th>Versión</th><th class="num">Lote base</th><th class="num">Componentes</th><th>Activa</th></tr></thead>
+      {% for b in boms %}<tr><td><a href="{% url 'bom_detalle' b.pk %}">{{ b.producto }}</a></td><td>v{{ b.version }}</td><td class="num">{{ b.cantidad_base|num:0 }} {{ b.producto.unidad }}</td><td class="num">{{ b.lineas.count }}</td><td>{% if b.activa %}<i class="bi bi-check-circle text-success"></i>{% endif %}</td></tr>{% endfor %}
+    </table>
+  </div></div>
+  <div class="col-lg-6"><div class="card">
+    <div class="card-header">Rutas</div>
+    <table class="table table-sm mb-0">
+      {% for r in rutas %}
+        <tr class="table-light"><td colspan="3"><b>{{ r.producto }}</b> · v{{ r.version }} · tiempos para {{ r.cantidad_lote|num:0 }} {{ r.producto.unidad }}</td></tr>
+        {% for op in r.operaciones.all %}<tr><td class="ps-4">{{ op.codigo }} {{ op.nombre }}</td><td class="small">{{ op.centro.codigo }}</td><td class="num">{{ op.tiempo_estandar_min|num:0 }} min</td></tr>{% endfor %}
+      {% endfor %}
+    </table>
+  </div></div>
+</div>
+{% endblock %}

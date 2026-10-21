@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Nueva inspección{% endblock %}
+{% block migas %}<a href="{% url 'inspecciones' %}">Inspecciones</a>{% endblock %}
+{% block encabezado %}Registrar inspección de calidad{% endblock %}
+{% block contenido %}
+<div class="card mb-3" style="max-width:860px"><div class="card-body">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-7">
+      <label class="form-label small">Lote</label>
+      <select name="lote" class="form-select" onchange="this.form.submit()">
+        <option value="">— Seleccione un lote —</option>
+        {% for l in lotes %}<option value="{{ l.pk }}" {% if lote and l.pk == lote.pk %}selected{% endif %}>{{ l.codigo }} · {{ l.producto.nombre }} ({{ l.get_estado_display }})</option>{% endfor %}
+      </select>
+    </div>
+    {% if etapas %}
+    <div class="col-md-5">
+      <label class="form-label small">Etapa</label>
+      <select name="etapa" class="form-select" onchange="this.form.submit()">
+        {% for c, n in etapas %}<option value="{{ c }}" {% if c == etapa %}selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+  </form>
+</div></div>
+
+{% if lote and parametros %}
+<form method="post" class="card" style="max-width:860px">{% csrf_token %}
+  <input type="hidden" name="lote" value="{{ lote.pk }}"><input type="hidden" name="etapa" value="{{ etapa }}">
+  <div class="card-header">Lote {{ lote }} {% estado lote %}</div>
+  <table class="table align-middle mb-0">
+    <thead><tr><th>Parámetro</th><th>Especificación</th><th style="width:200px">Valor medido</th></tr></thead>
+    {% for p in parametros %}
+      <tr><td>{{ p.nombre }}</td><td class="text-muted">{{ p.rango }}</td>
+      <td><input class="form-control" name="p_{{ p.pk }}" type="number" step="0.001" required></td></tr>
+    {% endfor %}
+  </table>
+  <div class="card-body">
+    <textarea class="form-control mb-3" name="observaciones" rows="2" placeholder="Observaciones (olor, color, apariencia...)"></textarea>
+    <button class="btn btn-verde"><i class="bi bi-clipboard2-check"></i> Registrar resultado</button>
+    <span class="small text-muted ms-2">Si algún valor está fuera de especificación se abre una no conformidad automáticamente.</span>
+  </div>
+</form>
+{% elif lote %}
+  <div class="alert alert-warning">El producto de este lote no tiene parámetros de calidad configurados.</div>
+{% endif %}
+{% endblock %}

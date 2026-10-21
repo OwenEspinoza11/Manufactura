@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo pedido{% endblock %}
+{% block migas %}<a href="{% url 'pv_lista' %}">Ventas</a>{% endblock %}
+{% block encabezado %}Nuevo pedido de venta{% endblock %}
+{% block contenido %}
+<form method="post">{% csrf_token %}
+  <div class="card mb-3"><div class="card-header">Cliente</div><div class="card-body">{% include "core/_campos.html" with form=form %}</div></div>
+  <div class="card mb-3"><div class="card-header">Productos (precio vacío = precio de lista)</div><div class="card-body">{% include "core/_formset.html" %}</div></div>
+  <button class="btn btn-verde"><i class="bi bi-check-lg"></i> Crear pedido</button>
+  <a class="btn btn-outline-secondary" href="{% url 'pv_lista' %}">Cancelar</a>
+</form>
+{% endblock %}

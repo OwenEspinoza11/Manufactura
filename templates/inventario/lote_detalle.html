@@ -1,0 +1,70 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Lote {{ lote }}{% endblock %}
+{% block migas %}<a href="{% url 'lotes' %}">Lotes</a>{% endblock %}
+{% block encabezado %}Lote {{ lote.codigo }} {% estado lote %}{% endblock %}
+{% block acciones %}
+  {% if lote.estado in 'CUA RET' and puede.calidad %}<a class="btn btn-sm btn-verde" href="{% url 'inspeccion_nueva' %}?lote={{ lote.pk }}"><i class="bi bi-clipboard2-check"></i> Inspeccionar</a>{% endif %}
+  <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir trazabilidad</button>
+{% endblock %}
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card mb-3"><div class="card-body small">
+      <dl class="row mb-0">
+        <dt class="col-5">Producto</dt><dd class="col-7">{{ lote.producto }}</dd>
+        <dt class="col-5">Origen</dt><dd class="col-7">{{ lote.get_origen_display }} · {{ lote.documento }}</dd>
+        {% if lote.proveedor %}<dt class="col-5">Proveedor</dt><dd class="col-7">{{ lote.proveedor.nombre }}{% if lote.lote_proveedor %}<br><span class="text-muted">lote prov. {{ lote.lote_proveedor }}</span>{% endif %}</dd>{% endif %}
+        <dt class="col-5">Fecha</dt><dd class="col-7">{{ lote.fecha|date:"d/m/Y H:i" }}</dd>
+        <dt class="col-5">Vencimiento</dt><dd class="col-7">{{ lote.vencimiento|date:"d/m/Y"|default:"—" }}</dd>
+        <dt class="col-5">Cantidad inicial</dt><dd class="col-7">{{ lote.cantidad_inicial|num:3 }} {{ lote.producto.unidad }}</dd>
+        <dt class="col-5">Saldo actual</dt><dd class="col-7 fw-bold">{{ saldo|num:3 }} {{ lote.producto.unidad }}</dd>
+        <dt class="col-5">Costo unitario</dt><dd class="col-7">{{ lote.costo_unitario|moneda }}</dd>
+      </dl>
+      {% if ubicaciones %}<hr class="my-2"><div class="text-muted">Ubicación:</div>{% for u in ubicaciones %}<div>{{ u.almacen }} — <b>{{ u.cantidad|num:3 }}</b></div>{% endfor %}{% endif %}
+    </div></div>
+    <div class="card mb-3"><div class="card-header">Calidad</div>
+      <ul class="list-group list-group-flush small">
+        {% for i in inspecciones %}<li class="list-group-item d-flex justify-content-between"><a href="{% url 'inspeccion_detalle' i.pk %}">{{ i.numero }} · {{ i.get_etapa_display }}</a>{% estado i 'resultado' %}</li>{% endfor %}
+        {% for nc in ncs %}<li class="list-group-item d-flex justify-content-between"><a href="{% url 'nc_detalle' nc.pk %}">{{ nc.numero }} {{ nc.get_disposicion_display }}</a>{% estado nc %}</li>{% endfor %}
+        {% if not inspecciones and not ncs %}<li class="list-group-item text-muted">Sin registros de calidad.</li>{% endif %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-arrow-up-left-circle"></i> Trazabilidad hacia atrás (genealogía: ¿de qué está hecho?)</div>
+      <table class="table table-sm mb-0 arbol">
+        <thead><tr><th>Lote</th><th>Producto</th><th class="num">Cant. usada</th><th>Proviene de</th><th>Estado</th></tr></thead>
+        {% for n in atras %}
+          <tr><td style="{{ n.nivel|sangria }}">{% if n.nivel %}<span class="text-muted">└</span> {% endif %}<a href="{% url 'lote_detalle' n.lote.pk %}">{{ n.lote }}</a></td>
+          <td class="small">{{ n.lote.producto.nombre }}</td>
+          <td class="num small">{% if n.cantidad %}{{ n.cantidad|num:3 }} {{ n.lote.producto.unidad }}{% endif %}</td>
+          <td class="small">{% if n.orden %}<a href="{% url 'op_detalle' n.orden.pk %}">{{ n.orden }}</a>{% elif n.recepcion %}<a href="{% url 'oc_detalle' n.recepcion.recepcion.orden.pk %}">{{ n.recepcion.recepcion.orden }}</a> · {{ n.lote.proveedor.nombre }}{% else %}{{ n.lote.documento }}{% endif %}</td>
+          <td>{% estado n.lote %}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-arrow-down-right-circle"></i> Trazabilidad hacia adelante (¿dónde terminó?)</div>
+      <table class="table table-sm mb-0">
+        {% for n in adelante %}
+          <tr><td style="{{ n.nivel|sangria }}">
+            {% if n.tipo == 'consumo' %}<i class="bi bi-gear"></i> Consumido {{ n.cantidad|num:3 }} en <a href="{% url 'op_detalle' n.orden.pk %}">{{ n.orden }}</a> → lote {% if n.lote %}<a href="{% url 'lote_detalle' n.lote.pk %}">{{ n.lote }}</a>{% endif %}
+            {% else %}<i class="bi bi-truck"></i> Despachado {{ n.cantidad|num:0 }} a <b>{{ n.cliente.nombre }}</b> ({{ n.despacho }} · {{ n.despacho.fecha|date:"d/m/Y" }}){% endif %}
+          </td></tr>
+        {% empty %}<tr><td class="text-muted">Aún no se ha consumido ni despachado.</td></tr>{% endfor %}
+      </table>
+    </div>
+    {% if lecturas %}
+    <div class="card mb-3"><div class="card-header">Variables de planta registradas durante su fabricación (IIoT)</div>
+      <table class="table table-sm mb-0">{% for l in lecturas %}<tr><td class="small">{{ l.fecha|date:"d/m H:i:s" }}</td><td>{{ l.sensor.nombre }}</td><td class="num">{{ l.valor|floatformat:2 }} {{ l.sensor.unidad }}</td><td>{% if l.fuera_rango %}<span class="badge text-bg-danger">fuera de rango</span>{% endif %}</td></tr>{% endfor %}</table>
+    </div>
+    {% endif %}
+    <div class="card"><div class="card-header">Movimientos del lote</div>
+      <table class="table table-sm mb-0">
+        {% for m in movimientos %}<tr><td class="small">{{ m.fecha|date:"d/m/Y H:i" }}</td><td class="small">{{ m.get_tipo_display }}</td><td class="small">{{ m.almacen_origen.codigo|default:"·" }} → {{ m.almacen_destino.codigo|default:"·" }}</td><td class="num">{{ m.cantidad|num:3 }}</td><td class="small">{{ m.referencia }}</td><td class="small">{{ m.usuario|default:"" }}</td></tr>{% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

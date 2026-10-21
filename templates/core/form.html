@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}{{ cat.titulo }}{% endblock %}
+{% block migas %}<a href="{% url cat.slug|add:'_lista' %}">{{ cat.titulo }}</a>{% endblock %}
+{% block encabezado %}{% if obj %}Editar {{ obj }}{% else %}Nuevo registro{% endif %}{% endblock %}
+{% block contenido %}
+<div class="card" style="max-width:760px">
+  <div class="card-body">
+    <form method="post">{% csrf_token %}
+      {% include "core/_campos.html" with form=form %}
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-verde"><i class="bi bi-check-lg"></i> Guardar</button>
+        <a class="btn btn-outline-secondary" href="{% url cat.slug|add:'_lista' %}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{{ formset.management_form }}
+{% if formset.non_form_errors %}<div class="alert alert-danger py-2">{{ formset.non_form_errors }}</div>{% endif %}
+<div class="table-responsive">
+<table class="table table-sm align-middle">
+  <thead><tr>{% for campo in formset.empty_form.visible_fields %}<th>{% if campo.name == 'DELETE' %}Quitar{% else %}{{ campo.label|capfirst }}{% endif %}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for f in formset %}
+    <tr>
+      {% for campo in f.visible_fields %}
+        <td>{{ campo }}{% for e in campo.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</td>
+      {% endfor %}
+      {% for h in f.hidden_fields %}{{ h }}{% endfor %}
+    </tr>
+    {% if f.non_field_errors %}<tr><td colspan="9" class="text-danger small">{{ f.non_field_errors }}</td></tr>{% endif %}
+  {% endfor %}
+  </tbody>
+</table>
+</div>

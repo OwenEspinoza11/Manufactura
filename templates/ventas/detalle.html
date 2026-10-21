@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ pedido }}{% endblock %}
+{% block migas %}<a href="{% url 'pv_lista' %}">Ventas</a>{% endblock %}
+{% block encabezado %}{{ pedido.numero }} {% estado pedido %}{% endblock %}
+{% block acciones %}
+  {% if pedido.estado == 'BOR' and puede.ventas %}<form method="post" action="{% url 'pv_accion' pedido.pk 'confirmar' %}">{% csrf_token %}<button class="btn btn-sm btn-verde"><i class="bi bi-check2-circle"></i> Confirmar</button></form>{% endif %}
+  {% if pedido.estado == 'CON' and puede.despacho %}<form method="post" action="{% url 'pv_accion' pedido.pk 'despachar' %}" data-confirmar="Se descontará el inventario por lote (FEFO, solo lotes liberados). ¿Despachar?">{% csrf_token %}<button class="btn btn-sm btn-verde"><i class="bi bi-truck"></i> Despachar</button></form>{% endif %}
+  {% if pedido.estado in 'BOR CON' and puede.ventas %}<form method="post" action="{% url 'pv_accion' pedido.pk 'cancelar' %}" data-confirmar="¿Cancelar el pedido?">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Cancelar</button></form>{% endif %}
+{% endblock %}
+{% block contenido %}
+{% if faltantes %}
+  <div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle"></i> Stock liberado insuficiente:
+    {% for l, hay in faltantes %}{{ l.producto.nombre }} (pedido {{ l.cantidad|num:0 }}, disponible {{ hay|num:0 }}){% if not forloop.last %}; {% endif %}{% endfor %}.
+  </div>
+{% endif %}
+<div class="row g-3">
+  <div class="col-lg-4"><div class="card"><div class="card-body small">
+    <dl class="row mb-0">
+      <dt class="col-5">Cliente</dt><dd class="col-7">{{ pedido.cliente.nombre }}<br><span class="text-muted">{{ pedido.cliente.get_tipo_display }}</span></dd>
+      <dt class="col-5">Fecha</dt><dd class="col-7">{{ pedido.fecha|date:"d/m/Y" }}</dd>
+      <dt class="col-5">Entrega</dt><dd class="col-7">{{ pedido.fecha_entrega|date:"d/m/Y"|default:"—" }}</dd>
+      <dt class="col-5">Total</dt><dd class="col-7 fw-bold">{{ pedido.total|moneda }}</dd>
+    </dl>
+  </div></div></div>
+  <div class="col-lg-8">
+    <div class="card mb-3"><div class="card-header">Líneas</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio</th><th class="num">Subtotal</th></tr></thead>
+        {% for l in lineas %}<tr><td>{{ l.producto }}</td><td class="num">{{ l.cantidad|num:0 }} {{ l.producto.unidad }}</td><td class="num">{{ l.precio_unitario|moneda }}</td><td class="num">{{ l.subtotal|moneda }}</td></tr>{% endfor %}
+      </table>
+    </div>
+    <div class="card"><div class="card-header">Despachos (salida por lote)</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Despacho</th><th>Fecha</th><th>Producto</th><th>Lote</th><th class="num">Cantidad</th></tr></thead>
+        {% for d in despachos %}{% for ld in d.lineas.all %}
+          <tr><td>{{ d.numero }}</td><td>{{ d.fecha|date:"d/m/Y H:i" }}</td><td>{{ ld.linea_pedido.producto.nombre }}</td><td><a href="{% url 'lote_detalle' ld.lote.pk %}">{{ ld.lote }}</a></td><td class="num">{{ ld.cantidad|num:0 }}</td></tr>
+        {% endfor %}{% empty %}<tr><td colspan="5" class="text-muted text-center">Sin despachos.</td></tr>{% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

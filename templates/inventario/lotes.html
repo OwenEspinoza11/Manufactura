@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Lotes{% endblock %}
+{% block migas %}Inventario · seguimiento por lote{% endblock %}
+{% block encabezado %}Lotes{% endblock %}
+{% block contenido %}
+<div class="card">
+  <div class="card-body pb-0 d-flex flex-wrap gap-2 justify-content-between">
+    <div class="btn-group btn-group-sm mb-3">
+      <a class="btn btn-outline-secondary {% if not estado %}active{% endif %}" href="?">Todos</a>
+      {% for c, n in estados %}<a class="btn btn-outline-secondary {% if estado == c %}active{% endif %}" href="?estado={{ c }}">{{ n|truncatewords:2 }}</a>{% endfor %}
+    </div>
+    <form class="mb-3" method="get"><input name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Buscar lote o producto"></form>
+  </div>
+  <div class="table-responsive"><table class="table table-hover table-sm mb-0">
+    <thead><tr><th>Lote</th><th>Producto</th><th>Origen</th><th>Documento</th><th>Fecha</th><th>Vence</th><th class="num">Cant. inicial</th><th class="num">Costo/u</th><th>Estado</th></tr></thead>
+    {% for l in lotes %}
+      <tr><td><a href="{% url 'lote_detalle' l.pk %}">{{ l.codigo }}</a></td><td class="small">{{ l.producto.nombre }}</td><td class="small">{{ l.get_origen_display }}</td>
+      <td class="small">{{ l.documento }}</td><td class="small">{{ l.fecha|date:"d/m/Y" }}</td><td class="small">{{ l.vencimiento|date:"d/m/Y"|default:"—" }}</td>
+      <td class="num">{{ l.cantidad_inicial|num:2 }} {{ l.producto.unidad }}</td><td class="num">{{ l.costo_unitario|moneda }}</td><td>{% estado l %}</td></tr>
+    {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">Sin lotes.</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

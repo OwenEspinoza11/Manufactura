@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ingreso · ERP Blancos Aromáticos</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/erp.css' %}">
+</head>
+<body class="d-flex align-items-center justify-content-center" style="min-height:100vh;background:linear-gradient(135deg,#0b4f4a,#0f766e)">
+  <div class="card p-4" style="width:360px">
+    <div class="text-center mb-3">
+      <i class="bi bi-droplet-half fs-1 text-success"></i>
+      <h1 class="h5 mb-0">Blancos Aromáticos</h1>
+      <small class="text-muted">Sistema ERP · MES · IIoT</small>
+    </div>
+    {% if form.errors %}<div class="alert alert-danger py-2 small">Usuario o contraseña incorrectos.</div>{% endif %}
+    <form method="post">{% csrf_token %}
+      <div class="mb-2"><label class="form-label small">Usuario</label><input name="username" class="form-control" autofocus required></div>
+      <div class="mb-3"><label class="form-label small">Contraseña</label><input name="password" type="password" class="form-control" required></div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn btn-verde w-100">Ingresar</button>
+    </form>
+    <p class="text-muted small mt-3 mb-0 text-center">UNI · Sistemas de Manufactura (SX002) · 2026</p>
+  </div>
+</body>
+</html>
