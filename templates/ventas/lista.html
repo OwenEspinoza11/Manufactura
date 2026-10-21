@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Ventas{% endblock %}
+{% block migas %}Ventas y distribución{% endblock %}
+{% block encabezado %}Pedidos de venta{% endblock %}
+{% block acciones %}{% if puede.ventas %}<a class="btn btn-verde btn-sm" href="{% url 'pv_nuevo' %}"><i class="bi bi-plus-lg"></i> Nuevo pedido</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="card">
+  <div class="card-body pb-0">
+    <div class="btn-group btn-group-sm mb-3">
+      <a class="btn btn-outline-secondary {% if not estado %}active{% endif %}" href="?">Todos</a>
+      {% for c, n in estados %}<a class="btn btn-outline-secondary {% if estado == c %}active{% endif %}" href="?estado={{ c }}">{{ n }}</a>{% endfor %}
+    </div>
+  </div>
+  <div class="table-responsive"><table class="table table-hover mb-0">
+    <thead><tr><th>Número</th><th>Cliente</th><th>Fecha</th><th>Entrega</th><th class="num">Total</th><th>Estado</th></tr></thead>
+    {% for p in pedidos %}
+      <tr><td><a href="{% url 'pv_detalle' p.pk %}">{{ p.numero }}</a></td><td>{{ p.cliente.nombre }}</td><td>{{ p.fecha|date:"d/m/Y" }}</td>
+      <td>{{ p.fecha_entrega|date:"d/m/Y"|default:"—" }}</td><td class="num">{{ p.total|moneda }}</td><td>{% estado p %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Sin pedidos.</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}
