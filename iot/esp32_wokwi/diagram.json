@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "author": "Equipo Blancos Aromáticos",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-hc-sr04", "id": "ultra", "top": -150, "left": 120, "attrs": { "distance": "40" } },
+    { "type": "wokwi-potentiometer", "id": "potph", "top": 60, "left": 240, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "pottemp", "top": 160, "left": 240, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "ir", "top": 260, "left": 200, "attrs": { "color": "green", "label": "IR botella" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "ultra:VCC", "esp:5V", "red", [] ],
+    [ "ultra:GND", "esp:GND.1", "black", [] ],
+    [ "ultra:TRIG", "esp:5", "orange", [] ],
+    [ "ultra:ECHO", "esp:18", "yellow", [] ],
+    [ "potph:VCC", "esp:3V3", "red", [] ],
+    [ "potph:GND", "esp:GND.2", "black", [] ],
+    [ "potph:SIG", "esp:34", "blue", [] ],
+    [ "pottemp:VCC", "esp:3V3", "red", [] ],
+    [ "pottemp:GND", "esp:GND.2", "black", [] ],
+    [ "pottemp:SIG", "esp:35", "purple", [] ],
+    [ "ir:1.l", "esp:4", "green", [] ],
+    [ "ir:2.l", "esp:GND.1", "black", [] ]
+  ],
+  "dependencies": {}
+}
