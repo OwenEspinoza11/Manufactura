@@ -18,7 +18,7 @@
   <div class="col-lg-8"><div class="card">
     <table class="table mb-0">
       <thead><tr><th>Parámetro</th><th>Especificación</th><th class="num">Valor</th><th>Conforme</th></tr></thead>
-      {% for r in resultados %}<tr class="{% if not r.conforme %}table-danger{% endif %}"><td>{{ r.parametro.nombre }}</td><td>{{ r.parametro.rango }}</td><td class="num">{{ r.valor|num:3 }}</td>
+      {% for r in resultados %}<tr class="{% if not r.conforme %}table-danger{% endif %}"><td>{{ r.parametro.nombre }}</td><td>{{ r.parametro.rango }}</td><td class="num">{{ r.valor|floatformat:"-3" }}</td>
       <td>{% if r.conforme %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>{% endfor %}
     </table>
     {% for nc in i.no_conformidades.all %}<div class="card-body border-top"><a href="{% url 'nc_detalle' nc.pk %}">{{ nc.numero }}</a> {% estado nc %}</div>{% endfor %}

@@ -3,6 +3,7 @@
 {% block migas %}<a href="{% url 'nc_lista' %}">No conformidades</a>{% endblock %}
 {% block encabezado %}{{ nc.numero }} {% estado nc %}{% endblock %}
 {% block contenido %}
+{% pasos nc %}
 <div class="row g-3">
   <div class="col-lg-6">
     <div class="card mb-3"><div class="card-body">
@@ -24,7 +25,7 @@
     {% if resultados %}
     <div class="card"><div class="card-header">Resultados de la inspección</div>
       <table class="table table-sm mb-0">
-        {% for r in resultados %}<tr class="{% if not r.conforme %}table-danger{% endif %}"><td>{{ r.parametro.nombre }}</td><td>{{ r.parametro.rango }}</td><td class="num">{{ r.valor|num:3 }}</td></tr>{% endfor %}
+        {% for r in resultados %}<tr class="{% if not r.conforme %}table-danger{% endif %}"><td>{{ r.parametro.nombre }}</td><td>{{ r.parametro.rango }}</td><td class="num">{{ r.valor|floatformat:"-3" }}</td></tr>{% endfor %}
       </table>
     </div>
     {% endif %}

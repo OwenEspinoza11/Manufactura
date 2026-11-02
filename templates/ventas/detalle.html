@@ -1,41 +1,47 @@
 {% extends "base.html" %}{% load erp %}
 {% block titulo %}{{ pedido }}{% endblock %}
-{% block migas %}<a href="{% url 'pv_lista' %}">Ventas</a>{% endblock %}
+{% block migas %}<a href="{% url 'pv_lista' %}">Pedidos de venta</a>{% endblock %}
 {% block encabezado %}{{ pedido.numero }} {% estado pedido %}{% endblock %}
 {% block acciones %}
-  {% if pedido.estado == 'BOR' and puede.ventas %}<form method="post" action="{% url 'pv_accion' pedido.pk 'confirmar' %}">{% csrf_token %}<button class="btn btn-sm btn-verde"><i class="bi bi-check2-circle"></i> Confirmar</button></form>{% endif %}
-  {% if pedido.estado == 'CON' and puede.despacho %}<form method="post" action="{% url 'pv_accion' pedido.pk 'despachar' %}" data-confirmar="Se descontará el inventario por lote (FEFO, solo lotes liberados). ¿Despachar?">{% csrf_token %}<button class="btn btn-sm btn-verde"><i class="bi bi-truck"></i> Despachar</button></form>{% endif %}
-  {% if pedido.estado in 'BOR CON' and puede.ventas %}<form method="post" action="{% url 'pv_accion' pedido.pk 'cancelar' %}" data-confirmar="¿Cancelar el pedido?">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Cancelar</button></form>{% endif %}
+  {% if pedido.estado in 'BOR CON' and puede.ventas %}<form method="post" action="{% url 'pv_accion' pedido.pk 'cancelar' %}" data-confirmar="¿Cancelar el pedido?">{% csrf_token %}<button class="btn btn-outline-danger">Cancelar pedido</button></form>{% endif %}
+  {% if pedido.estado == 'BOR' and puede.ventas %}<form method="post" action="{% url 'pv_accion' pedido.pk 'confirmar' %}">{% csrf_token %}<button class="btn btn-verde"><i class="bi bi-check2-circle"></i> Confirmar pedido</button></form>{% endif %}
+  {% if pedido.estado == 'CON' and puede.despacho %}<form method="post" action="{% url 'pv_accion' pedido.pk 'despachar' %}" data-confirmar="Se despacharán los lotes liberados más próximos a vencer. ¿Continuar?">{% csrf_token %}<button class="btn btn-verde"><i class="bi bi-truck"></i> Despachar</button></form>{% endif %}
 {% endblock %}
 {% block contenido %}
+{% pasos pedido %}
 {% if faltantes %}
-  <div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle"></i> Stock liberado insuficiente:
+  <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Stock disponible insuficiente:
     {% for l, hay in faltantes %}{{ l.producto.nombre }} (pedido {{ l.cantidad|num:0 }}, disponible {{ hay|num:0 }}){% if not forloop.last %}; {% endif %}{% endfor %}.
   </div>
 {% endif %}
+<div class="datos">
+  <div class="dato"><div class="dato-etiqueta">Cliente</div><div class="dato-valor">{{ pedido.cliente.nombre }}</div><div class="small text-muted">{{ pedido.cliente.get_tipo_display }}</div></div>
+  <div class="dato"><div class="dato-etiqueta">Fecha</div><div class="dato-valor">{{ pedido.fecha|date:"d M Y" }}</div></div>
+  <div class="dato"><div class="dato-etiqueta">Entrega</div><div class="dato-valor">{{ pedido.fecha_entrega|date:"d M Y"|default:"—" }}</div></div>
+  <div class="dato"><div class="dato-etiqueta">Total</div><div class="dato-valor">{{ pedido.total|moneda }}</div></div>
+</div>
 <div class="row g-3">
-  <div class="col-lg-4"><div class="card"><div class="card-body small">
-    <dl class="row mb-0">
-      <dt class="col-5">Cliente</dt><dd class="col-7">{{ pedido.cliente.nombre }}<br><span class="text-muted">{{ pedido.cliente.get_tipo_display }}</span></dd>
-      <dt class="col-5">Fecha</dt><dd class="col-7">{{ pedido.fecha|date:"d/m/Y" }}</dd>
-      <dt class="col-5">Entrega</dt><dd class="col-7">{{ pedido.fecha_entrega|date:"d/m/Y"|default:"—" }}</dd>
-      <dt class="col-5">Total</dt><dd class="col-7 fw-bold">{{ pedido.total|moneda }}</dd>
-    </dl>
-  </div></div></div>
-  <div class="col-lg-8">
-    <div class="card mb-3"><div class="card-header">Líneas</div>
-      <table class="table table-sm mb-0">
+  <div class="col-lg-7">
+    <div class="card h-100"><div class="card-header">Productos</div>
+      <table class="table">
         <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio</th><th class="num">Subtotal</th></tr></thead>
-        {% for l in lineas %}<tr><td>{{ l.producto }}</td><td class="num">{{ l.cantidad|num:0 }} {{ l.producto.unidad }}</td><td class="num">{{ l.precio_unitario|moneda }}</td><td class="num">{{ l.subtotal|moneda }}</td></tr>{% endfor %}
+        <tbody>
+        {% for l in lineas %}<tr><td><div class="fw-semibold">{{ l.producto.nombre }}</div><span class="linea linea-{{ l.producto.linea }}">{{ l.producto.get_linea_display }}</span></td><td class="num">{{ l.cantidad|num:0 }} {{ l.producto.unidad }}</td><td class="num">{{ l.precio_unitario|moneda }}</td><td class="num fw-semibold">{{ l.subtotal|moneda }}</td></tr>{% endfor %}
+        </tbody>
       </table>
     </div>
-    <div class="card"><div class="card-header">Despachos (salida por lote)</div>
-      <table class="table table-sm mb-0">
-        <thead><tr><th>Despacho</th><th>Fecha</th><th>Producto</th><th>Lote</th><th class="num">Cantidad</th></tr></thead>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100"><div class="card-header">Despacho por lote</div>
+      {% if despachos %}
+      <table class="table">
+        <tbody>
         {% for d in despachos %}{% for ld in d.lineas.all %}
-          <tr><td>{{ d.numero }}</td><td>{{ d.fecha|date:"d/m/Y H:i" }}</td><td>{{ ld.linea_pedido.producto.nombre }}</td><td><a href="{% url 'lote_detalle' ld.lote.pk %}">{{ ld.lote }}</a></td><td class="num">{{ ld.cantidad|num:0 }}</td></tr>
-        {% endfor %}{% empty %}<tr><td colspan="5" class="text-muted text-center">Sin despachos.</td></tr>{% endfor %}
+          <tr><td><a href="{% url 'lote_detalle' ld.lote.pk %}"><span class="codigo">{{ ld.lote }}</span></a><div class="small text-muted mt-1">{{ d.numero }} · {{ d.fecha|date:"d M H:i" }}</div></td><td class="num fw-semibold">{{ ld.cantidad|num:0 }}</td></tr>
+        {% endfor %}{% endfor %}
+        </tbody>
       </table>
+      {% else %}<div class="vacio"><i class="bi bi-truck"></i>Aún no se ha despachado.</div>{% endif %}
     </div>
   </div>
 </div>

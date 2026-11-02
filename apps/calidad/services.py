@@ -63,7 +63,7 @@ def registrar_inspeccion(lote, etapa, valores, inspector=None, fecha=None, obser
             pendiente.comentario_disposicion += f"\nRetrabajo verificado con la inspección {inspeccion.numero}."
             pendiente.save()
     else:
-        fuera = [f"{r.parametro.nombre} = {r.valor.normalize()} (esperado {r.parametro.rango})" for r in resultados if not r.conforme]
+        fuera = [f"{r.parametro.nombre} = {r.valor.normalize():f} (esperado {r.parametro.rango})" for r in resultados if not r.conforme]
         lote.estado = Lote.Estado.CUARENTENA
         lote.save(update_fields=["estado", "actualizado_en"])
         nc = NoConformidad.objects.create(

@@ -95,7 +95,7 @@ def iniciar(op, usuario=None, fecha=None):
     fecha = fecha or timezone.now()
     faltantes = [r for r in requerimientos(op) if r["faltante"] > 0]
     if faltantes:
-        detalle = "; ".join(f"{r['componente'].codigo} faltan {r['faltante'].normalize()} {r['componente'].unidad}" for r in faltantes)
+        detalle = "; ".join(f"{r['componente'].codigo} faltan {r['faltante'].normalize():f} {r['componente'].unidad}" for r in faltantes)
         raise ProduccionError(f"Material liberado insuficiente: {detalle}.")
     costo = Decimal("0")
     for linea in op.bom.lineas.select_related("componente"):

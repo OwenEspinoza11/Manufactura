@@ -1,8 +1,8 @@
 {% extends "base.html" %}{% load erp %}
 {% block titulo %}Kardex{% endblock %}
-{% block migas %}Inventario · movimientos inmutables (no se editan ni se borran){% endblock %}
+{% block migas %}Inventario · los movimientos no se modifican; las correcciones se hacen con ajustes{% endblock %}
 {% block encabezado %}Kardex de movimientos{% endblock %}
-{% block acciones %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'kpi_exportar' 'movimientos' %}"><i class="bi bi-download"></i> CSV</a>{% endblock %}
+{% block acciones %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'kpi_exportar' 'movimientos' %}"><i class="bi bi-download"></i> Exportar a Excel</a>{% endblock %}
 {% block contenido %}
 <div class="card mb-3"><div class="card-body">
   <form class="row g-2" method="get">
@@ -20,7 +20,7 @@
   <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Lote</th><th>Origen → destino</th><th class="num">Cantidad</th><th class="num">Costo/u</th><th>Documento</th><th>Usuario</th></tr></thead>
   {% for m in pagina %}
     <tr><td class="small">{{ m.fecha|date:"d/m/Y H:i" }}</td><td class="small">{{ m.get_tipo_display }}</td><td class="small">{{ m.producto.codigo }}</td>
-    <td class="small">{% if m.lote %}<a href="{% url 'lote_detalle' m.lote.pk %}">{{ m.lote }}</a>{% endif %}</td>
+    <td>{% if m.lote %}<a href="{% url 'lote_detalle' m.lote.pk %}"><span class="codigo">{{ m.lote }}</span></a>{% endif %}</td>
     <td class="small">{{ m.almacen_origen.codigo|default:"·" }} → {{ m.almacen_destino.codigo|default:"·" }}</td>
     <td class="num {% if m.almacen_destino and not m.almacen_origen %}text-success{% elif m.almacen_origen and not m.almacen_destino %}text-danger{% endif %}">{{ m.cantidad|num:3 }}</td>
     <td class="num">{{ m.costo_unitario|moneda }}</td><td class="small">{{ m.referencia }}</td><td class="small">{{ m.usuario|default:"" }}</td></tr>

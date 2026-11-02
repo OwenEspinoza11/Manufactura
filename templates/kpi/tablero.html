@@ -1,102 +1,114 @@
 {% extends "base.html" %}{% load static erp %}
 {% block titulo %}Indicadores{% endblock %}
-{% block migas %}Análisis de datos · calculado en vivo desde las transacciones del ERP{% endblock %}
-{% block encabezado %}Indicadores clave de desempeño (KPI){% endblock %}
+{% block migas %}Planta · calculado con las transacciones registradas{% endblock %}
+{% block encabezado %}Indicadores de desempeño{% endblock %}
 {% block acciones %}
   <div class="dropdown">
-    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download"></i> Exportar CSV</button>
+    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download"></i> Exportar a Excel</button>
     <ul class="dropdown-menu dropdown-menu-end">
-      <li><a class="dropdown-item" href="{% url 'kpi_exportar' 'kpi' %}">Resumen de KPI</a></li>
+      <li><a class="dropdown-item" href="{% url 'kpi_exportar' 'kpi' %}">Resumen de indicadores</a></li>
       <li><a class="dropdown-item" href="{% url 'kpi_exportar' 'ordenes' %}">Órdenes de producción</a></li>
       <li><a class="dropdown-item" href="{% url 'kpi_exportar' 'lotes' %}">Lotes</a></li>
       <li><a class="dropdown-item" href="{% url 'kpi_exportar' 'movimientos' %}">Movimientos de inventario</a></li>
     </ul>
   </div>
-  <a class="btn btn-sm btn-outline-secondary" href="{% url 'kpi_api' %}" target="_blank"><i class="bi bi-braces"></i> API JSON</a>
-  <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i></button>
+  <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
 {% endblock %}
 {% block contenido %}
+<div class="kpis">
+  <div class="kpi">
+    <div class="kpi-etiqueta">OEE de planta</div>
+    <div class="kpi-valor">{{ oee.oee|pct }}</div>
+    <div class="meta {{ oee.oee|semaforo:'0.85,0.65' }}"><span style="width:{{ oee.oee|porcentaje_ancho }}"></span><i style="left:85%"></i></div>
+    <div class="kpi-pie">Meta 85 % · {{ oee.ordenes }} órdenes</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-etiqueta">Rendimiento</div>
+    <div class="kpi-valor">{{ yield.yield|pct }}</div>
+    <div class="meta {{ yield.yield|semaforo:'0.97,0.90' }}"><span style="width:{{ yield.yield|porcentaje_ancho }}"></span><i style="left:97%"></i></div>
+    <div class="kpi-pie">{{ yield.buenas|num:0 }} buenas · {{ yield.producido|num:0 }} producidas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-etiqueta">Aprobados a la primera</div>
+    <div class="kpi-valor">{{ fpy.fpy|pct }}</div>
+    <div class="meta {{ fpy.fpy|semaforo:'0.95,0.85' }}"><span style="width:{{ fpy.fpy|porcentaje_ancho }}"></span><i style="left:95%"></i></div>
+    <div class="kpi-pie">{{ fpy.aprobados }} de {{ fpy.inspeccionados }} lotes · {{ fpy.nc_abiertas }} NC abiertas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-etiqueta">Rotación de inventario</div>
+    <div class="kpi-valor">{{ rotacion.rotacion|num:1 }}<small> veces / 30 d</small></div>
+    <div class="kpi-pie">Costo de ventas {{ rotacion.costo_ventas|moneda }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-etiqueta">Costo real por unidad</div>
+    <div class="kpi-valor">{{ costo_unitario_pt|moneda }}</div>
+    <div class="kpi-pie">Material + mano de obra y equipo</div>
+  </div>
+  <div class="kpi kpi-eco">
+    <div class="kpi-etiqueta"><i class="bi bi-recycle"></i> Aceite recuperado</div>
+    <div class="kpi-valor">{{ sostenibilidad.aceite_recuperado_l|num:0 }}<small> L</small></div>
+    <div class="kpi-pie">{{ sostenibilidad.aceite_aprovechado_l|num:0 }} L usados · {{ sostenibilidad.unidades_eco|num:0 }} und ECO</div>
+  </div>
+</div>
+
 <div class="row g-3 mb-3">
-  <div class="col-lg-6">
+  <div class="col-lg-5">
     <div class="card h-100">
-      <div class="card-header">1 · OEE (Overall Equipment Effectiveness)</div>
+      <div class="card-header">Pérdidas de OEE</div>
       <div class="card-body">
-        <div class="d-flex align-items-end gap-4 mb-3">
-          <div class="kpi"><div class="valor text-{{ oee.oee|semaforo:'0.85,0.65' }}" style="font-size:2.6rem">{{ oee.oee|pct }}</div><div class="detalle">{{ oee.ordenes }} órdenes terminadas</div></div>
-          <table class="table table-sm mb-0 w-auto">
-            <tr><td>Disponibilidad</td><td class="num">{{ oee.disponibilidad|pct }}</td><td class="small text-muted">({{ oee.minutos_operacion|num:0 }} − {{ oee.minutos_paro|num:0 }} min paro) / {{ oee.minutos_operacion|num:0 }}</td></tr>
-            <tr><td>Rendimiento</td><td class="num">{{ oee.rendimiento|pct }}</td><td class="small text-muted">{{ oee.minutos_estandar|num:0 }} min estándar / tiempo neto</td></tr>
-            <tr><td>Calidad</td><td class="num">{{ oee.calidad|pct }}</td><td class="small text-muted">unidades buenas / producidas</td></tr>
-          </table>
-        </div>
-        <table class="table table-sm">
-          <thead><tr><th>Centro de trabajo</th><th class="num">Disp.</th><th class="num">Rend.</th><th class="num">Cal.</th><th class="num">OEE</th></tr></thead>
-          {% for c in oee_centros %}
-            <tr><td>{{ c.centro }}</td><td class="num">{{ c.disponibilidad|pct:0 }}</td><td class="num">{{ c.rendimiento|pct:0 }}</td><td class="num">{{ c.calidad|pct:0 }}</td><td class="num fw-semibold text-{{ c.oee|semaforo:'0.85,0.65' }}">{{ c.oee|pct }}</td></tr>
-          {% endfor %}
-        </table>
-        <p class="small text-muted mb-0">Interpretación: referencia de clase mundial ≈ 85 %. La pérdida dominante indica dónde actuar: paros (disponibilidad), lentitud frente al estándar (rendimiento) o scrap (calidad).</p>
+        {% for nombre, valor, detalle in oee_componentes %}
+          <div class="d-flex justify-content-between small fw-bold mb-1"><span>{{ nombre }}</span><span>{{ valor|pct }}</span></div>
+          <div class="progreso mb-1" style="height:8px"><span style="width:{{ valor|porcentaje_ancho }}"></span></div>
+          <div class="small text-muted mb-3">{{ detalle }}</div>
+        {% endfor %}
       </div>
     </div>
   </div>
-  <div class="col-lg-6">
-    <div class="row g-3">
-      <div class="col-6"><div class="card kpi h-100"><div class="card-body">
-        <div class="etiqueta">2 · Yield</div><div class="valor">{{ yield.yield|pct }}</div>
-        <div class="detalle">{{ yield.buenas|num:0 }} buenas de {{ yield.planificado|num:0 }} planificadas ({{ yield.producido|num:0 }} producidas)</div>
-      </div></div></div>
-      <div class="col-6"><div class="card kpi h-100"><div class="card-body">
-        <div class="etiqueta">3 · FPY (aprobado a la primera)</div><div class="valor">{{ fpy.fpy|pct }}</div>
-        <div class="detalle">{{ fpy.aprobados }} de {{ fpy.inspeccionados }} lotes inspeccionados · {{ fpy.nc_abiertas }} NC abiertas</div>
-      </div></div></div>
-      <div class="col-6"><div class="card kpi h-100"><div class="card-body">
-        <div class="etiqueta">4 · Rotación de inventario PT</div><div class="valor">{{ rotacion.rotacion|num:2 }}×</div>
-        <div class="detalle">en {{ rotacion.dias_periodo }} días (≈ {{ rotacion.rotacion_anual|num:1 }}×/año). Costo de ventas {{ rotacion.costo_ventas|moneda }} / inventario promedio {{ rotacion.inventario_promedio|moneda }}</div>
-      </div></div></div>
-      <div class="col-6"><div class="card kpi h-100"><div class="card-body">
-        <div class="etiqueta">5 · Costo unitario promedio PT</div><div class="valor">{{ costo_unitario_pt|moneda }}</div>
-        <div class="detalle">material real por lote + conversión (minutos reales × costo/hora del centro)</div>
-      </div></div></div>
-      <div class="col-12"><div class="card kpi" style="background:#ecfdf5"><div class="card-body">
-        <div class="etiqueta text-success"><i class="bi bi-recycle"></i> 6 · Sostenibilidad — Línea ECO</div>
-        <div class="d-flex gap-4 flex-wrap mt-1">
-          <div><div class="valor text-success">{{ sostenibilidad.aceite_recuperado_l|num:0 }} L</div><div class="detalle">aceite de cocina usado recuperado</div></div>
-          <div><div class="valor text-success">{{ sostenibilidad.aceite_aprovechado_l|num:0 }} L</div><div class="detalle">aprovechado en producción</div></div>
-          <div><div class="valor text-success">{{ sostenibilidad.agua_protegida_l|num:0 }} L</div><div class="detalle">agua potencialmente protegida*</div></div>
-          <div><div class="valor text-success">{{ sostenibilidad.unidades_eco|num:0 }}</div><div class="detalle">unidades ECO fabricadas</div></div>
-        </div>
-      </div></div></div>
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header">OEE por centro de trabajo</div>
+      <table class="table">
+        <thead><tr><th>Centro</th><th class="num">Disponibilidad</th><th class="num">Rendimiento</th><th class="num">Calidad</th><th style="width:30%">OEE</th></tr></thead>
+        <tbody>
+        {% for c in oee_centros %}
+          <tr><td class="fw-semibold">{{ c.centro.nombre }}</td><td class="num">{{ c.disponibilidad|pct:0 }}</td><td class="num">{{ c.rendimiento|pct:0 }}</td><td class="num">{{ c.calidad|pct:0 }}</td>
+          <td><div class="d-flex align-items-center gap-2"><div class="meta {{ c.oee|semaforo:'0.85,0.65' }} flex-grow-1 mt-0"><span style="width:{{ c.oee|porcentaje_ancho }}"></span><i style="left:85%"></i></div><span class="fw-bold small">{{ c.oee|pct }}</span></div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
 
 <div class="row g-3">
-  <div class="col-lg-7">
+  <div class="col-lg-8">
     <div class="card">
-      <div class="card-header">Costo unitario real vs. estándar por lote</div>
-      <div class="table-responsive"><table class="table table-sm mb-0">
-        <thead><tr><th>Orden</th><th>Lote</th><th>Producto</th><th class="num">Cant.</th><th class="num">Material</th><th class="num">Conversión</th><th class="num">Real/u</th><th class="num">Estándar/u</th><th class="num">Var.</th></tr></thead>
+      <div class="card-header">Costo real contra estándar <span class="ms-auto small text-muted fw-semibold">últimos 12 lotes</span></div>
+      <div class="table-responsive"><table class="table">
+        <thead><tr><th>Orden</th><th style="min-width:190px">Producto</th><th class="num">Cantidad</th><th class="num">Costo total</th><th class="num">Real/u</th><th class="num">Estándar/u</th><th class="num">Desvío</th></tr></thead>
+        <tbody>
         {% for c in costos %}
-          <tr><td><a href="{% url 'op_detalle' c.orden.pk %}">{{ c.orden }}</a></td><td class="small">{{ c.lote }}</td><td class="small">{{ c.producto.nombre }}</td>
-          <td class="num">{{ c.cantidad|num:0 }}</td><td class="num">{{ c.material|moneda }}</td><td class="num">{{ c.conversion|moneda }}</td>
-          <td class="num fw-semibold">{{ c.real|moneda }}</td><td class="num">{{ c.estandar|moneda }}</td>
-          <td class="num text-{% if c.variacion > 0.05 %}danger{% elif c.variacion < -0.05 %}success{% else %}muted{% endif %}">{{ c.variacion|pct }}</td></tr>
+          <tr><td><a href="{% url 'op_detalle' c.orden.pk %}"><span class="codigo">{{ c.orden }}</span></a></td><td class="small fw-semibold">{{ c.producto.nombre }}</td>
+          <td class="num">{{ c.cantidad|num:0 }}</td><td class="num">{{ c.orden.costo_total|moneda }}</td>
+          <td class="num fw-bold">{{ c.real|moneda }}</td><td class="num text-muted">{{ c.estandar|moneda }}</td>
+          <td class="num"><span class="pill {% if c.variacion > 0.05 %}pill-bad{% elif c.variacion < -0.05 %}pill-ok{% else %}pill-neutral{% endif %}">{{ c.variacion|pct }}</span></td></tr>
         {% endfor %}
+        </tbody>
       </table></div>
     </div>
   </div>
-  <div class="col-lg-5">
+  <div class="col-lg-4">
     <div class="card mb-3">
-      <div class="card-header">Tiempo de ciclo promedio por producto</div>
-      <table class="table table-sm mb-0">
-        <thead><tr><th>Producto</th><th class="num">Órdenes</th><th class="num">Horas</th></tr></thead>
-        {% for t in ciclos %}<tr><td class="small">{{ t.producto }}</td><td class="num">{{ t.ordenes }}</td><td class="num">{{ t.promedio_h|num:2 }}</td></tr>{% endfor %}
+      <div class="card-header">Tiempo de ciclo promedio</div>
+      <table class="table">
+        <tbody>
+        {% for t in ciclos %}<tr><td class="small fw-semibold">{{ t.producto.nombre }}<div class="text-muted fw-normal">{{ t.ordenes }} órdenes</div></td><td class="num fw-bold">{{ t.promedio_h|num:1 }} h</td></tr>{% endfor %}
+        </tbody>
       </table>
     </div>
-    <div class="card"><div class="card-header">Producción semanal</div><div class="card-body"><canvas id="grafSemanal" height="170"></canvas></div></div>
+    <div class="card"><div class="card-header">Producción semanal <span class="ms-auto d-flex gap-2"><span class="linea linea-DESINF">Desinf.</span><span class="linea linea-ECO">ECO</span></span></div><div class="card-body"><canvas id="grafSemanal" height="190"></canvas></div></div>
   </div>
 </div>
-<p class="small text-muted mt-3">* Factor referencial de {{ sostenibilidad.factor }} L de agua por litro de aceite (configurable en <code>FACTOR_AGUA_POR_LITRO_ACEITE</code>); citar la fuente en el informe.</p>
 {{ semanal|json_script:"datos-semanal" }}
 {% endblock %}
 {% block scripts %}

@@ -28,8 +28,10 @@ class NuevaOrdenForm(forms.Form):
 
 class ConsumoAdicionalForm(forms.Form):
     componente = forms.ModelChoiceField(queryset=Producto.objects.filter(
-        activo=True, tipo__in=[Producto.Tipo.MATERIA_PRIMA, Producto.Tipo.EMPAQUE, Producto.Tipo.SEMIELABORADO]))
-    cantidad = forms.DecimalField(min_value=Decimal("0.001"), max_digits=14, decimal_places=3)
+        activo=True, tipo__in=[Producto.Tipo.MATERIA_PRIMA, Producto.Tipo.EMPAQUE, Producto.Tipo.SEMIELABORADO]),
+        empty_label="Seleccione el material")
+    cantidad = forms.DecimalField(min_value=Decimal("0.001"), max_digits=14, decimal_places=3,
+                                  widget=forms.NumberInput(attrs={"placeholder": "Cantidad", "step": "0.001"}))
     motivo = forms.CharField(max_length=200)
 
 
@@ -65,7 +67,7 @@ def detalle(request, pk):
         "consumos": op.consumos.select_related("componente__unidad", "lote"),
         "form_consumo": ConsumoAdicionalForm(),
         "inspecciones": op.lote.inspecciones.all() if op.lote else [],
-        "lecturas": op.lecturas.select_related("sensor").order_by("-fecha")[:15],
+        "lecturas": op.lecturas.select_related("sensor").order_by("-fecha")[:8],
         "alertas": op.alertas.select_related("sensor")[:10],
     }
     if op.estado in (OrdenProduccion.Estado.BORRADOR, OrdenProduccion.Estado.CONFIRMADA):

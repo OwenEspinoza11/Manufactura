@@ -33,11 +33,11 @@ class ParametroCalidad(models.Model):
     @property
     def rango(self):
         if self.minimo is not None and self.maximo is not None:
-            return f"{self.minimo.normalize()}–{self.maximo.normalize()} {self.unidad}".strip()
+            return f"{self.minimo.normalize():f}–{self.maximo.normalize():f} {self.unidad}".strip()
         if self.minimo is not None:
-            return f"≥ {self.minimo.normalize()} {self.unidad}".strip()
+            return f"≥ {self.minimo.normalize():f} {self.unidad}".strip()
         if self.maximo is not None:
-            return f"≤ {self.maximo.normalize()} {self.unidad}".strip()
+            return f"≤ {self.maximo.normalize():f} {self.unidad}".strip()
         return "sin límite"
 
     def es_conforme(self, valor):

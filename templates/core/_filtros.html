@@ -1,0 +1,4 @@
+<div class="filtros">
+  <a class="filtro {% if not estado %}activo{% endif %}" href="?">Todos</a>
+  {% for c, n in estados %}<a class="filtro {% if estado == c %}activo{% endif %}" href="?estado={{ c }}">{{ n }}</a>{% endfor %}
+</div>

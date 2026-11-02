@@ -25,7 +25,7 @@ def panel(request):
         "sensores": sensores,
         "dispositivos": Dispositivo.objects.select_related("centro"),
         "alertas": Alerta.objects.select_related("sensor", "orden").filter(atendida=False)[:20],
-        "mqtt_prefijo": "blancosaromaticos/planta",
+        
     })
 
 

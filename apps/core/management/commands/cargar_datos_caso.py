@@ -155,15 +155,15 @@ PARAMETROS = [
 PREFIJO_MQTT = "blancosaromaticos/planta"
 # dispositivo, nombre, centro, [(codigo, nombre, tipo, unidad, topico, min, max)]
 DISPOSITIVOS = [
-    ("ESP32-T01", "ESP32 tanque mezclador T-01", "TQ-01", [
-        ("TQ1-NIVEL", "Nivel tanque T-01 (HC-SR04)", "NIV", "%", "tanque1/nivel", 5, 95),
-        ("TQ1-PH", "pH en tanque T-01", "PH", "pH", "tanque1/ph", 6.0, 11.0),
+    ("ESP32-T01", "Sensores del tanque mezclador T-01", "TQ-01", [
+        ("TQ1-NIVEL", "Nivel del tanque", "NIV", "%", "tanque1/nivel", 5, 95),
+        ("TQ1-PH", "pH de la mezcla", "PH", "pH", "tanque1/ph", 6.0, 11.0),
     ]),
-    ("ESP32-R01", "ESP32 reactor de saponificación R-01", "REA-01", [
-        ("REA1-TEMP", "Temperatura reactor R-01", "TEM", "°C", "reactor1/temperatura", 60, 88),
+    ("ESP32-R01", "Sensores del reactor R-01", "REA-01", [
+        ("REA1-TEMP", "Temperatura del reactor", "TEM", "°C", "reactor1/temperatura", 60, 88),
     ]),
-    ("ESP32-ENV", "ESP32 línea de envasado (sensor IR)", "ENV-01", [
-        ("ENV-CONTEO", "Conteo de botellas envasadas", "CON", "und", "envasado/conteo", None, None),
+    ("ESP32-ENV", "Contador de la línea de envasado", "ENV-01", [
+        ("ENV-CONTEO", "Botellas envasadas", "CON", "und", "envasado/conteo", None, None),
     ]),
 ]
 

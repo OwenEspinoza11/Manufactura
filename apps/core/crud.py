@@ -3,7 +3,10 @@
 Un `Catalogo` describe un modelo (columnas, campos editables, permisos) y genera
 sus vistas de lista / alta / edición reutilizando dos plantillas comunes.
 """
+from decimal import Decimal
+
 from django.contrib import messages
+from django.contrib.humanize.templatetags.humanize import intcomma
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.forms import modelform_factory
@@ -22,7 +25,10 @@ def _valor(obj, atributo):
         valor = getattr(valor, parte, None)
         if valor is None:
             return ""
-    return valor() if callable(valor) else valor
+    valor = valor() if callable(valor) else valor
+    if isinstance(valor, Decimal):
+        return intcomma(f"{valor:.2f}")
+    return valor
 
 
 class Catalogo:

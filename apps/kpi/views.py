@@ -14,10 +14,18 @@ from . import services
 
 @login_required
 def tablero(request):
+    resumen = services.resumen()
+    o = resumen["oee"]
+    componentes = [
+        ("Disponibilidad", o["disponibilidad"], f"{o['minutos_paro']:,.0f} min de paro en {o['minutos_operacion']:,.0f} min de operación"),
+        ("Rendimiento", o["rendimiento"], f"{o['minutos_estandar']:,.0f} min estándar frente al tiempo neto real"),
+        ("Calidad", o["calidad"], "Unidades buenas sobre unidades producidas"),
+    ]
     return render(request, "kpi/tablero.html", {
-        **services.resumen(),
+        **resumen,
+        "oee_componentes": componentes,
         "oee_centros": services.oee_por_centro(),
-        "costos": services.costos_por_lote(),
+        "costos": services.costos_por_lote(limite=12),
         "ciclos": services.tiempo_ciclo(),
         "semanal": services.produccion_semanal(),
     })

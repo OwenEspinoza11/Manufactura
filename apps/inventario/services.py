@@ -107,7 +107,7 @@ def asignar_fefo(producto, cantidad, tipos_almacen, solo_liberados=True):
         pendiente -= toma
     if pendiente > 0:
         raise InventarioError(
-            f"Stock liberado insuficiente de {producto}: faltan {pendiente.normalize()} {producto.unidad}."
+            f"Stock liberado insuficiente de {producto}: faltan {pendiente.normalize():f} {producto.unidad}."
         )
     return asignacion
 
@@ -127,7 +127,7 @@ def registrar_movimiento(*, tipo, producto, cantidad, lote=None, origen=None, de
         if existente < cantidad:
             raise InventarioError(
                 f"Saldo insuficiente de {producto.codigo} lote {lote or '-'} en {origen.codigo}: "
-                f"hay {existente.normalize()}, se requieren {cantidad.normalize()}."
+                f"hay {existente.normalize():f}, se requieren {cantidad.normalize():f}."
             )
     if costo_unitario is None:
         costo_unitario = lote.costo_unitario if lote else producto.costo_estandar

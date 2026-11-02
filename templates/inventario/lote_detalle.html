@@ -32,7 +32,7 @@
   </div>
   <div class="col-lg-8">
     <div class="card mb-3">
-      <div class="card-header"><i class="bi bi-arrow-up-left-circle"></i> Trazabilidad hacia atrás (genealogía: ¿de qué está hecho?)</div>
+      <div class="card-header"><i class="bi bi-arrow-up-left-circle"></i> Composición del lote · de qué está hecho</div>
       <table class="table table-sm mb-0 arbol">
         <thead><tr><th>Lote</th><th>Producto</th><th class="num">Cant. usada</th><th>Proviene de</th><th>Estado</th></tr></thead>
         {% for n in atras %}
@@ -45,7 +45,7 @@
       </table>
     </div>
     <div class="card mb-3">
-      <div class="card-header"><i class="bi bi-arrow-down-right-circle"></i> Trazabilidad hacia adelante (¿dónde terminó?)</div>
+      <div class="card-header"><i class="bi bi-arrow-down-right-circle"></i> Destino del lote · dónde terminó</div>
       <table class="table table-sm mb-0">
         {% for n in adelante %}
           <tr><td style="{{ n.nivel|sangria }}">
@@ -56,7 +56,7 @@
       </table>
     </div>
     {% if lecturas %}
-    <div class="card mb-3"><div class="card-header">Variables de planta registradas durante su fabricación (IIoT)</div>
+    <div class="card mb-3"><div class="card-header">Lecturas de planta durante su fabricación</div>
       <table class="table table-sm mb-0">{% for l in lecturas %}<tr><td class="small">{{ l.fecha|date:"d/m H:i:s" }}</td><td>{{ l.sensor.nombre }}</td><td class="num">{{ l.valor|floatformat:2 }} {{ l.sensor.unidad }}</td><td>{% if l.fuera_rango %}<span class="badge text-bg-danger">fuera de rango</span>{% endif %}</td></tr>{% endfor %}</table>
     </div>
     {% endif %}
